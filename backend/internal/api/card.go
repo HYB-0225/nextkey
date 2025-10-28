@@ -60,6 +60,7 @@ func ListCards(c *gin.Context) {
 	note := c.Query("note")
 	customData := c.Query("custom_data")
 	activated := c.Query("activated")
+	frozen := c.Query("frozen")
 	hwid := c.Query("hwid")
 	ip := c.Query("ip")
 	startTime := c.Query("start_time")
@@ -67,7 +68,7 @@ func ListCards(c *gin.Context) {
 
 	cardSvc := service.NewCardService()
 
-	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
+	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || frozen != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
 		filter := &service.CardListFilter{
 			ProjectID:  uint(projectID),
 			Keyword:    keyword,
@@ -75,6 +76,7 @@ func ListCards(c *gin.Context) {
 			Note:       note,
 			CustomData: customData,
 			Activated:  activated,
+			Frozen:     frozen,
 			HWID:       hwid,
 			IP:         ip,
 			StartTime:  startTime,
@@ -189,4 +191,64 @@ func BatchDeleteCards(c *gin.Context) {
 	}
 
 	utils.Success(c, gin.H{"message": "批量删除成功"})
+}
+
+func FreezeCard(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.FreezeCard(uint(id)); err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "冻结成功"})
+}
+
+func UnfreezeCard(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.UnfreezeCard(uint(id)); err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "恢复成功"})
+}
+
+func BatchFreezeCards(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, 400, "参数错误")
+		return
+	}
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.BatchFreeze(req.IDs); err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "批量冻结成功"})
+}
+
+func BatchUnfreezeCards(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, 400, "参数错误")
+		return
+	}
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.BatchUnfreeze(req.IDs); err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "批量恢复成功"})
 }

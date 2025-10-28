@@ -41,8 +41,12 @@ func RegisterRoutes(r *gin.Engine) {
 			adminAuth.GET("/cards/:id", GetCard)
 			adminAuth.PUT("/cards/:id", UpdateCard)
 			adminAuth.DELETE("/cards/:id", DeleteCard)
+			adminAuth.PUT("/cards/:id/freeze", FreezeCard)
+			adminAuth.PUT("/cards/:id/unfreeze", UnfreezeCard)
 			adminAuth.PUT("/cards/batch", BatchUpdateCards)
 			adminAuth.DELETE("/cards/batch", BatchDeleteCards)
+			adminAuth.PUT("/cards/batch/freeze", BatchFreezeCards)
+			adminAuth.PUT("/cards/batch/unfreeze", BatchUnfreezeCards)
 
 			adminAuth.GET("/cloud-vars", ListCloudVars)
 			adminAuth.POST("/cloud-vars", SetCloudVar)

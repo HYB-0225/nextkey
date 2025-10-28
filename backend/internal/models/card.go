@@ -35,6 +35,7 @@ type Card struct {
 	ProjectID  uint           `gorm:"not null;index" json:"project_id"`
 	Project    *Project       `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
 	Activated  bool           `gorm:"default:false" json:"activated"`
+	Frozen     bool           `gorm:"default:false" json:"frozen"`
 	Duration   int            `gorm:"default:0" json:"duration"` // 秒
 	ExpireAt   *time.Time     `json:"expire_at"`
 	Note       string         `json:"note"`
@@ -68,4 +69,8 @@ func (c *Card) CanAddIP() bool {
 		return true
 	}
 	return len(c.IPList) < c.MaxIP
+}
+
+func (c *Card) IsFrozen() bool {
+	return c.Frozen
 }

@@ -3,9 +3,14 @@
     <el-descriptions :column="isMobile ? 1 : 2" border v-if="card">
       <el-descriptions-item label="卡密">{{ card.card_key }}</el-descriptions-item>
       <el-descriptions-item label="状态">
-        <el-tag :type="card.activated ? 'success' : 'info'">
-          {{ card.activated ? '已激活' : '未激活' }}
-        </el-tag>
+        <div style="display: flex; gap: 8px;">
+          <el-tag v-if="card.frozen" type="danger">
+            已冻结
+          </el-tag>
+          <el-tag v-else :type="card.activated ? 'success' : 'info'">
+            {{ card.activated ? '已激活' : '未激活' }}
+          </el-tag>
+        </div>
       </el-descriptions-item>
       <el-descriptions-item label="时长">{{ formatDuration(card.duration) }}</el-descriptions-item>
       <el-descriptions-item label="类型">{{ card.card_type }}</el-descriptions-item>

@@ -5,11 +5,16 @@
       <el-table :data="cards" style="width: 100%;" v-loading="loading" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
         <el-table-column prop="card_key" label="卡密" min-width="200" show-overflow-tooltip />
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.activated ? 'success' : 'info'">
-              {{ row.activated ? '已激活' : '未激活' }}
-            </el-tag>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <el-tag v-if="row.frozen" type="danger" size="small">
+                已冻结
+              </el-tag>
+              <el-tag v-else :type="row.activated ? 'success' : 'info'" size="small">
+                {{ row.activated ? '已激活' : '未激活' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="有效时长" width="120">
@@ -29,7 +34,7 @@
             {{ row.ip_list?.length || 0 }} / {{ row.max_ip === -1 ? '∞' : row.max_ip }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250" :fixed="isDesktop ? 'right' : false" class-name="action-column">
+        <el-table-column label="操作" width="300" :fixed="isDesktop ? 'right' : false" class-name="action-column">
           <template #default="{ row }">
             <ActionButtons :actions="getRowActions(row)" />
           </template>
@@ -67,7 +72,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Edit, View, Delete } from '@element-plus/icons-vue'
+import { Edit, View, Delete, Lock, Unlock } from '@element-plus/icons-vue'
 import { formatDuration } from '@/composables/useDuration'
 import ActionButtons from '@/components/common/ActionButtons.vue'
 import CardListMobile from './CardListMobile.vue'
@@ -100,7 +105,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view', 'delete', 'freeze', 'unfreeze'])
 
 const handleSelectionChange = (selection) => {
   selectedCards.value = selection
@@ -125,11 +130,18 @@ const getRowActions = (row) => [
     handler: () => emit('view', row)
   },
   {
+    key: 'freeze',
+    icon: row.frozen ? Unlock : Lock,
+    label: row.frozen ? '恢复' : '冻结',
+    type: row.frozen ? 'success' : 'warning',
+    divided: true,
+    handler: () => row.frozen ? emit('unfreeze', row) : emit('freeze', row)
+  },
+  {
     key: 'delete',
     icon: Delete,
     label: '删除',
     type: 'danger',
-    divided: true,
     handler: () => emit('delete', row)
   }
 ]
@@ -165,6 +177,12 @@ const getRowActions = (row) => [
 
 :deep(.el-tag.el-tag--info) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #fff;
+}
+
+:deep(.el-tag.el-tag--danger) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border: none;
   color: #fff;
 }

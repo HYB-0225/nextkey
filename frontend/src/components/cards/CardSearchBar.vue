@@ -36,6 +36,17 @@
           <el-option label="未激活" value="false" />
         </el-select>
         
+        <el-select 
+          v-model="searchForm.frozen" 
+          placeholder="冻结状态" 
+          clearable
+          class="search-select-sm"
+          @change="handleSearch"
+        >
+          <el-option label="已冻结" value="true" />
+          <el-option label="未冻结" value="false" />
+        </el-select>
+        
         <el-input 
           v-model="searchForm.note" 
           placeholder="备注" 
@@ -123,6 +134,7 @@ const searchForm = ref({
   keyword: '',
   card_type: '',
   activated: '',
+  frozen: '',
   note: '',
   custom_data: '',
   hwid: '',
@@ -151,6 +163,7 @@ const handleReset = () => {
     keyword: '',
     card_type: '',
     activated: '',
+    frozen: '',
     note: '',
     custom_data: '',
     hwid: '',

@@ -46,6 +46,7 @@ type CardListFilter struct {
 	Note       string
 	CustomData string
 	Activated  string
+	Frozen     string
 	HWID       string
 	IP         string
 	StartTime  string
@@ -153,6 +154,12 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int
 		query = query.Where("activated = ?", true)
 	} else if filter.Activated == "false" {
 		query = query.Where("activated = ?", false)
+	}
+
+	if filter.Frozen == "true" {
+		query = query.Where("frozen = ?", true)
+	} else if filter.Frozen == "false" {
+		query = query.Where("frozen = ?", false)
 	}
 
 	if filter.StartTime != "" {
@@ -313,6 +320,74 @@ func (s *CardService) BatchDelete(ids []uint) error {
 	}()
 
 	if err := tx.Where("id IN ?", ids).Delete(&models.Card{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *CardService) FreezeCard(id uint) error {
+	var card models.Card
+	if err := database.DB.First(&card, id).Error; err != nil {
+		return errors.New("卡密不存在")
+	}
+
+	if card.Frozen {
+		return errors.New("卡密已处于冻结状态")
+	}
+
+	card.Frozen = true
+	return database.DB.Save(&card).Error
+}
+
+func (s *CardService) UnfreezeCard(id uint) error {
+	var card models.Card
+	if err := database.DB.First(&card, id).Error; err != nil {
+		return errors.New("卡密不存在")
+	}
+
+	if !card.Frozen {
+		return errors.New("卡密未被冻结")
+	}
+
+	card.Frozen = false
+	return database.DB.Save(&card).Error
+}
+
+func (s *CardService) BatchFreeze(ids []uint) error {
+	if len(ids) == 0 {
+		return errors.New("未选择卡密")
+	}
+
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Model(&models.Card{}).Where("id IN ?", ids).Update("frozen", true).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *CardService) BatchUnfreeze(ids []uint) error {
+	if len(ids) == 0 {
+		return errors.New("未选择卡密")
+	}
+
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Model(&models.Card{}).Where("id IN ?", ids).Update("frozen", false).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

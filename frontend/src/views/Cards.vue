@@ -22,6 +22,12 @@
         <el-button type="warning" @click="handleBatchUpdate" :disabled="selectedCards.length === 0" style="margin-left: 10px;">
           批量修改
         </el-button>
+        <el-button type="warning" @click="handleBatchFreeze" :disabled="selectedCards.length === 0">
+          批量冻结
+        </el-button>
+        <el-button type="success" @click="handleBatchUnfreeze" :disabled="selectedCards.length === 0">
+          批量恢复
+        </el-button>
         <el-button type="success" @click="handleBatchExport" :disabled="selectedCards.length === 0">
           批量导出
         </el-button>
@@ -46,6 +52,8 @@
         @edit="handleEdit"
         @view="handleView"
         @delete="handleDelete"
+        @freeze="handleFreeze"
+        @unfreeze="handleUnfreeze"
       />
     </el-card>
     
@@ -101,7 +109,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { getProjects } from '@/api/project'
-import { getCards, createCards, deleteCard, updateCard, batchUpdateCards, batchDeleteCards } from '@/api/card'
+import { getCards, createCards, deleteCard, updateCard, batchUpdateCards, batchDeleteCards, freezeCard, unfreezeCard, batchFreezeCards, batchUnfreezeCards } from '@/api/card'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePagination } from '@/composables/usePagination'
 import { useTableSelection } from '@/composables/useTableSelection'
@@ -338,6 +346,76 @@ const handleBatchDelete = () => {
         ids: selectedCards.value.map(c => c.id)
       })
       ElMessage.success(`成功删除 ${selectedCards.value.length} 个卡密`)
+      selectedCards.value = []
+      loadCards()
+    } catch (error) {
+      console.error(error)
+    }
+  }).catch(() => {})
+}
+
+const handleFreeze = (row) => {
+  ElMessageBox.confirm('确定要冻结该卡密吗?', '警告', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await freezeCard(row.id)
+      ElMessage.success('冻结成功')
+      loadCards()
+    } catch (error) {
+      console.error(error)
+    }
+  }).catch(() => {})
+}
+
+const handleUnfreeze = (row) => {
+  ElMessageBox.confirm('确定要恢复该卡密吗?', '确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'info'
+  }).then(async () => {
+    try {
+      await unfreezeCard(row.id)
+      ElMessage.success('恢复成功')
+      loadCards()
+    } catch (error) {
+      console.error(error)
+    }
+  }).catch(() => {})
+}
+
+const handleBatchFreeze = () => {
+  ElMessageBox.confirm(`确定要冻结选中的 ${selectedCards.value.length} 个卡密吗?`, '批量冻结', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await batchFreezeCards({
+        ids: selectedCards.value.map(c => c.id)
+      })
+      ElMessage.success(`成功冻结 ${selectedCards.value.length} 个卡密`)
+      selectedCards.value = []
+      loadCards()
+    } catch (error) {
+      console.error(error)
+    }
+  }).catch(() => {})
+}
+
+const handleBatchUnfreeze = () => {
+  ElMessageBox.confirm(`确定要恢复选中的 ${selectedCards.value.length} 个卡密吗?`, '批量恢复', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'info'
+  }).then(async () => {
+    try {
+      await batchUnfreezeCards({
+        ids: selectedCards.value.map(c => c.id)
+      })
+      ElMessage.success(`成功恢复 ${selectedCards.value.length} 个卡密`)
       selectedCards.value = []
       loadCards()
     } catch (error) {

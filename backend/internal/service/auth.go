@@ -79,6 +79,10 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("卡密已过期")
 	}
 
+	if card.IsFrozen() {
+		return nil, errors.New("卡密已冻结")
+	}
+
 	// 验证设备码
 	if project.EnableHWID {
 		if req.HWID == "" {

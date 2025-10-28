@@ -54,3 +54,33 @@ export function batchDeleteCards(data) {
   })
 }
 
+export function freezeCard(id) {
+  return request({
+    url: `/admin/cards/${id}/freeze`,
+    method: 'put'
+  })
+}
+
+export function unfreezeCard(id) {
+  return request({
+    url: `/admin/cards/${id}/unfreeze`,
+    method: 'put'
+  })
+}
+
+export function batchFreezeCards(data) {
+  return request({
+    url: '/admin/cards/batch/freeze',
+    method: 'put',
+    data
+  })
+}
+
+export function batchUnfreezeCards(data) {
+  return request({
+    url: '/admin/cards/batch/unfreeze',
+    method: 'put',
+    data
+  })
+}
+
