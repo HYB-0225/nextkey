@@ -22,10 +22,18 @@
         <el-button type="warning" @click="handleBatchUpdate" :disabled="selectedCards.length === 0" style="margin-left: 10px;">
           批量修改
         </el-button>
+        <el-button type="success" @click="handleBatchExport" :disabled="selectedCards.length === 0">
+          批量导出
+        </el-button>
         <el-button type="danger" @click="handleBatchDelete" :disabled="selectedCards.length === 0">
           批量删除
         </el-button>
       </div>
+      
+      <CardSearchBar
+        @search="handleSearch"
+        @reset="handleSearchReset"
+      />
       
       <CardTable
         :cards="cards"
@@ -62,6 +70,29 @@
       :selected-count="selectedCards.length"
       @save="handleBatchUpdateSave"
     />
+    
+    <CardCreatedDialog
+      v-model:visible="createdDialogVisible"
+      :cards="createdCards"
+    />
+    
+    <el-dialog
+      v-model="exportDialogVisible"
+      title="选择导出格式"
+      :width="isMobile ? '95%' : '400px'"
+    >
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <el-button type="primary" @click="handleExportFormat('json')">
+          导出为 JSON
+        </el-button>
+        <el-button type="primary" @click="handleExportFormat('txt')">
+          导出为 TXT (仅卡密)
+        </el-button>
+        <el-button type="primary" @click="handleExportFormat('csv')">
+          导出为 CSV
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -76,11 +107,14 @@ import { usePagination } from '@/composables/usePagination'
 import { useTableSelection } from '@/composables/useTableSelection'
 import { useResponsive } from '@/composables/useResponsive'
 import { secondsToUnitValue, unitValueToSeconds } from '@/composables/useDuration'
+import { exportToJSON, exportToTXT, exportToCSV } from '@/utils/export'
 import CardTable from '@/components/cards/CardTable.vue'
+import CardSearchBar from '@/components/cards/CardSearchBar.vue'
 import CardCreateDialog from '@/components/cards/CardCreateDialog.vue'
 import CardEditDialog from '@/components/cards/CardEditDialog.vue'
 import CardDetailDialog from '@/components/cards/CardDetailDialog.vue'
 import CardBatchUpdateDialog from '@/components/cards/CardBatchUpdateDialog.vue'
+import CardCreatedDialog from '@/components/cards/CardCreatedDialog.vue'
 
 const route = useRoute()
 const { isMobile } = useResponsive()
@@ -88,6 +122,7 @@ const loading = ref(false)
 const projects = ref([])
 const selectedProjectId = ref(null)
 const cards = ref([])
+const searchParams = ref({})
 
 const { page, pageSize, total, handlePageChange: onPageChange } = usePagination()
 const { selectedItems: selectedCards, handleSelectionChange } = useTableSelection()
@@ -96,8 +131,11 @@ const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const batchUpdateDialogVisible = ref(false)
+const exportDialogVisible = ref(false)
+const createdDialogVisible = ref(false)
 const currentCard = ref(null)
 const editCardData = ref(null)
+const createdCards = ref([])
 
 const loadProjects = async () => {
   try {
@@ -119,7 +157,8 @@ const loadCards = async () => {
     const data = await getCards({
       project_id: selectedProjectId.value,
       page: page.value,
-      page_size: pageSize.value
+      page_size: pageSize.value,
+      ...searchParams.value
     })
     cards.value = data.list || []
     total.value = data.total || 0
@@ -128,6 +167,18 @@ const loadCards = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleSearch = (params) => {
+  searchParams.value = params
+  page.value = 1
+  loadCards()
+}
+
+const handleSearchReset = () => {
+  searchParams.value = {}
+  page.value = 1
+  loadCards()
 }
 
 const handlePageChange = (newPage) => {
@@ -161,9 +212,12 @@ const handleCreateSave = async (formData) => {
       params.count = formData.count
     }
     
-    await createCards(params)
-    ElMessage.success('生成成功')
+    const result = await createCards(params)
     createDialogVisible.value = false
+    
+    createdCards.value = result
+    createdDialogVisible.value = true
+    
     loadCards()
   } catch (error) {
     console.error(error)
@@ -290,6 +344,30 @@ const handleBatchDelete = () => {
       console.error(error)
     }
   }).catch(() => {})
+}
+
+const handleBatchExport = () => {
+  exportDialogVisible.value = true
+}
+
+const handleExportFormat = (format) => {
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_')
+  const filename = `cards_export_${timestamp}`
+  
+  switch (format) {
+    case 'json':
+      exportToJSON(selectedCards.value, filename)
+      break
+    case 'txt':
+      exportToTXT(selectedCards.value, filename)
+      break
+    case 'csv':
+      exportToCSV(selectedCards.value, filename)
+      break
+  }
+  
+  exportDialogVisible.value = false
+  ElMessage.success(`成功导出 ${selectedCards.value.length} 个卡密`)
 }
 
 onMounted(() => {

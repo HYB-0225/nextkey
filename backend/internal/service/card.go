@@ -39,6 +39,21 @@ type UpdateCardRequest struct {
 	IPList     *models.StringArray `json:"ip_list"`
 }
 
+type CardListFilter struct {
+	ProjectID  uint
+	Keyword    string
+	CardType   string
+	Note       string
+	CustomData string
+	Activated  string
+	HWID       string
+	IP         string
+	StartTime  string
+	EndTime    string
+	Page       int
+	PageSize   int
+}
+
 func (s *CardService) CreateBatch(req *CreateCardRequest) ([]models.Card, error) {
 	var project models.Project
 	if err := database.DB.First(&project, req.ProjectID).Error; err != nil {
@@ -94,6 +109,64 @@ func (s *CardService) List(projectID uint, page, pageSize int) ([]models.Card, i
 
 	offset := (page - 1) * pageSize
 	if err := query.Offset(offset).Limit(pageSize).Find(&cards).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return cards, total, nil
+}
+
+func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int64, error) {
+	var cards []models.Card
+	var total int64
+
+	query := database.DB.Model(&models.Card{})
+
+	if filter.ProjectID > 0 {
+		query = query.Where("project_id = ?", filter.ProjectID)
+	}
+
+	if filter.Keyword != "" {
+		query = query.Where("card_key LIKE ?", "%"+filter.Keyword+"%")
+	}
+
+	if filter.CardType != "" {
+		query = query.Where("card_type = ?", filter.CardType)
+	}
+
+	if filter.Note != "" {
+		query = query.Where("note LIKE ?", "%"+filter.Note+"%")
+	}
+
+	if filter.CustomData != "" {
+		query = query.Where("custom_data LIKE ?", "%"+filter.CustomData+"%")
+	}
+
+	if filter.HWID != "" {
+		query = query.Where("hwid_list LIKE ?", "%"+filter.HWID+"%")
+	}
+
+	if filter.IP != "" {
+		query = query.Where("ip_list LIKE ?", "%"+filter.IP+"%")
+	}
+
+	if filter.Activated == "true" {
+		query = query.Where("activated = ?", true)
+	} else if filter.Activated == "false" {
+		query = query.Where("activated = ?", false)
+	}
+
+	if filter.StartTime != "" {
+		query = query.Where("created_at >= ?", filter.StartTime)
+	}
+
+	if filter.EndTime != "" {
+		query = query.Where("created_at <= ?", filter.EndTime)
+	}
+
+	query.Count(&total)
+
+	offset := (filter.Page - 1) * filter.PageSize
+	if err := query.Order("created_at DESC").Offset(offset).Limit(filter.PageSize).Find(&cards).Error; err != nil {
 		return nil, 0, err
 	}
 

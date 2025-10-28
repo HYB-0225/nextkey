@@ -55,7 +55,48 @@ func ListCards(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
+	keyword := c.Query("keyword")
+	cardType := c.Query("card_type")
+	note := c.Query("note")
+	customData := c.Query("custom_data")
+	activated := c.Query("activated")
+	hwid := c.Query("hwid")
+	ip := c.Query("ip")
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
 	cardSvc := service.NewCardService()
+
+	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
+		filter := &service.CardListFilter{
+			ProjectID:  uint(projectID),
+			Keyword:    keyword,
+			CardType:   cardType,
+			Note:       note,
+			CustomData: customData,
+			Activated:  activated,
+			HWID:       hwid,
+			IP:         ip,
+			StartTime:  startTime,
+			EndTime:    endTime,
+			Page:       page,
+			PageSize:   pageSize,
+		}
+
+		cards, total, err := cardSvc.ListWithFilter(filter)
+		if err != nil {
+			utils.Error(c, 500, err.Error())
+			return
+		}
+
+		utils.Success(c, gin.H{
+			"list":  cards,
+			"total": total,
+			"page":  page,
+		})
+		return
+	}
+
 	cards, total, err := cardSvc.List(uint(projectID), page, pageSize)
 	if err != nil {
 		utils.Error(c, 500, err.Error())

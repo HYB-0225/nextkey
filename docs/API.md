@@ -297,9 +297,31 @@
 **接口**: `GET /admin/cards`
 
 **查询参数**:
-- `project_id`: 项目ID
+- `project_id`: 项目ID（必需）
 - `page`: 页码
 - `page_size`: 每页数量
+- `keyword`: 卡密关键词（模糊搜索）
+- `card_type`: 卡密类型
+- `activated`: 激活状态（"true"/"false"）
+- `note`: 备注（模糊搜索）
+- `custom_data`: 专属信息（模糊搜索）
+- `hwid`: 设备码（模糊搜索）
+- `ip`: IP地址（模糊搜索）
+- `start_time`: 创建时间范围-开始（格式：2024-01-01 00:00:00）
+- `end_time`: 创建时间范围-结束（格式：2024-01-01 23:59:59）
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [...],
+    "total": 100,
+    "page": 1
+  }
+}
+```
 
 #### 批量生成卡密
 
