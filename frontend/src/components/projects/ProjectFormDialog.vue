@@ -1,6 +1,15 @@
 <template>
-  <el-dialog v-model="dialogVisible" :title="title" width="600px" @close="handleClose">
-    <el-form :model="form" label-width="120px">
+  <div class="modern-dialog theme-primary">
+    <el-dialog 
+      v-model="dialogVisible" 
+      :title="title" 
+      :width="isMobile ? '95%' : '600px'"
+      :fullscreen="isMobile"
+      :close-on-click-modal="false"
+      @close="handleClose"
+      @opened="handleOpened"
+    >
+    <el-form :model="form" :label-width="isMobile ? '0px' : '120px'" :label-position="isMobile ? 'top' : 'right'">
       <el-form-item label="项目名称">
         <el-input v-model="form.name" />
       </el-form-item>
@@ -12,6 +21,9 @@
       </el-form-item>
       <el-form-item label="版本号">
         <el-input v-model="form.version" />
+      </el-form-item>
+      <el-form-item label="更新地址">
+        <el-input v-model="form.update_url" placeholder="可选，用于客户端检查更新" />
       </el-form-item>
       <el-form-item label="Token有效期">
         <el-input v-model.number="form.token_expire" type="number">
@@ -29,15 +41,20 @@
       </el-form-item>
     </el-form>
     
-    <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleSave">确定</el-button>
-    </template>
-  </el-dialog>
+      <template #footer>
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSave">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
+import { useResponsive } from '@/composables/useResponsive'
+import { staggerFormItems } from '@/utils/animations'
+
+const { isMobile } = useResponsive()
 
 const props = defineProps({
   visible: {
@@ -62,6 +79,7 @@ const form = ref({
   name: '',
   mode: 'free',
   version: '1.0.0',
+  update_url: '',
   token_expire: 3600,
   enable_hwid: true,
   enable_ip: true,
@@ -88,6 +106,7 @@ const resetForm = () => {
     name: '',
     mode: 'free',
     version: '1.0.0',
+    update_url: '',
     token_expire: 3600,
     enable_hwid: true,
     enable_ip: true,
@@ -102,46 +121,25 @@ const handleClose = () => {
 const handleSave = () => {
   emit('save', form.value)
 }
+
+const handleOpened = () => {
+  nextTick(() => {
+    const formItems = document.querySelectorAll('.el-form-item')
+    if (formItems.length > 0) {
+      staggerFormItems(formItems)
+    }
+  })
+}
 </script>
 
 <style scoped>
-:deep(.el-dialog) {
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+/* 组件特有样式 */
+:deep(.el-radio) {
+  margin-right: 16px;
 }
 
-:deep(.el-dialog__header) {
-  background: var(--color-bg-tertiary);
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-:deep(.el-dialog__body) {
-  padding: 24px;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-:deep(.el-input__wrapper),
-:deep(.el-textarea__inner) {
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-:deep(.el-button) {
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-@media (max-width: 768px) {
-  :deep(.el-dialog) {
-    width: 90% !important;
-    margin: 20px auto;
-  }
+:deep(.el-switch) {
+  --el-switch-on-color: #667eea;
 }
 </style>
 

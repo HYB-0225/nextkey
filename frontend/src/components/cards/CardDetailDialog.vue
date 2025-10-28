@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="dialogVisible" title="卡密详情" width="700px" @close="handleClose">
-    <el-descriptions :column="2" border v-if="card">
+    <el-descriptions :column="isMobile ? 1 : 2" border v-if="card">
       <el-descriptions-item label="卡密">{{ card.card_key }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="card.activated ? 'success' : 'info'">
@@ -34,6 +34,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { formatDuration } from '@/composables/useDuration'
+import { useResponsive } from '@/composables/useResponsive'
+
+const { isMobile } = useResponsive()
 
 const props = defineProps({
   visible: {
@@ -94,6 +97,14 @@ const handleClose = () => {
   :deep(.el-dialog) {
     width: 90% !important;
     margin: 20px auto;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+  
+  :deep(.el-descriptions__label) {
+    width: 100px !important;
   }
 }
 </style>

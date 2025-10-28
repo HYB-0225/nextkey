@@ -10,7 +10,7 @@ import (
 func CardLogin(c *gin.Context) {
 	var req service.LoginRequest
 	if err := middleware.GetDecryptedData(c, &req); err != nil {
-		utils.Error(c, 400, "参数错误")
+		utils.EncryptedError(c, 400, "参数错误")
 		return
 	}
 
@@ -21,11 +21,11 @@ func CardLogin(c *gin.Context) {
 	authSvc := service.NewAuthService()
 	resp, err := authSvc.CardLogin(&req)
 	if err != nil {
-		utils.Error(c, 401, err.Error())
+		utils.EncryptedError(c, 401, err.Error())
 		return
 	}
 
-	utils.Success(c, resp)
+	utils.EncryptedSuccess(c, resp)
 }
 
 func AdminLogin(c *gin.Context) {
@@ -46,14 +46,20 @@ func AdminLogin(c *gin.Context) {
 }
 
 func Heartbeat(c *gin.Context) {
-	cardID, _ := c.Get("card_id")
+	cardID, exists := c.Get("card_id")
 	projectID, _ := c.Get("project_id")
 
-	cardSvc := service.NewCardService()
-	if err := cardSvc.Heartbeat(cardID.(uint), projectID.(uint)); err != nil {
-		utils.Error(c, 500, err.Error())
+	// 免费模式下没有card_id,直接返回成功
+	if !exists {
+		utils.EncryptedSuccess(c, gin.H{"message": "心跳成功"})
 		return
 	}
 
-	utils.Success(c, gin.H{"message": "心跳成功"})
+	cardSvc := service.NewCardService()
+	if err := cardSvc.Heartbeat(cardID.(uint), projectID.(uint)); err != nil {
+		utils.EncryptedError(c, 500, err.Error())
+		return
+	}
+
+	utils.EncryptedSuccess(c, gin.H{"message": "心跳成功"})
 }

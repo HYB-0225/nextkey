@@ -11,7 +11,19 @@ import (
 func GetProjectInfo(c *gin.Context) {
 	projectID, _ := c.Get("project_id")
 
-	utils.Success(c, gin.H{"project_id": projectID})
+	projectSvc := service.NewProjectService()
+	project, err := projectSvc.GetByID(projectID.(uint))
+	if err != nil {
+		utils.EncryptedError(c, 404, err.Error())
+		return
+	}
+
+	utils.EncryptedSuccess(c, gin.H{
+		"uuid":       project.UUID,
+		"name":       project.Name,
+		"version":    project.Version,
+		"update_url": project.UpdateURL,
+	})
 }
 
 func CreateProject(c *gin.Context) {

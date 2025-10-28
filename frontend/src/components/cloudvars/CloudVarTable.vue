@@ -1,22 +1,46 @@
 <template>
-  <el-table :data="cloudVars" style="width: 100%;" v-loading="loading" @selection-change="handleSelectionChange">
-    <el-table-column type="selection" width="55" />
-    <el-table-column prop="key" label="变量名" min-width="200" show-overflow-tooltip />
-    <el-table-column prop="value" label="值" min-width="250" show-overflow-tooltip />
-    <el-table-column label="操作" width="150" :fixed="isDesktop ? 'right' : false" class-name="action-column">
-      <template #default="{ row }">
-        <ActionButtons :actions="getRowActions(row)" />
-      </template>
-    </el-table-column>
-  </el-table>
+  <div>
+    <!-- 桌面端表格视图 -->
+    <el-table 
+      v-if="!isMobile"
+      :data="cloudVars" 
+      style="width: 100%;" 
+      v-loading="loading" 
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" />
+      <el-table-column prop="key" label="变量名" min-width="200" show-overflow-tooltip />
+      <el-table-column prop="value" label="值" min-width="250" show-overflow-tooltip />
+      <el-table-column label="操作" width="150" :fixed="isDesktop ? 'right' : false" class-name="action-column">
+        <template #default="{ row }">
+          <ActionButtons :actions="getRowActions(row)" />
+        </template>
+      </el-table-column>
+    </el-table>
+    
+    <!-- 移动端卡片视图 -->
+    <CloudVarCardList
+      v-else
+      :cloud-vars="cloudVars"
+      :loading="loading"
+      :selected-vars="selectedVars"
+      @selection-change="handleSelectionChange"
+      @edit="(row) => $emit('edit', row)"
+      @delete="(row) => $emit('delete', row)"
+    />
+  </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { Edit, Delete } from '@element-plus/icons-vue'
 import ActionButtons from '@/components/common/ActionButtons.vue'
+import CloudVarCardList from './CloudVarCardList.vue'
 import { useResponsive } from '@/composables/useResponsive'
 
-const { isDesktop } = useResponsive()
+const { isMobile, isDesktop } = useResponsive()
+
+const selectedVars = ref([])
 
 defineProps({
   cloudVars: {
@@ -32,6 +56,7 @@ defineProps({
 const emit = defineEmits(['selection-change', 'edit', 'delete'])
 
 const handleSelectionChange = (selection) => {
+  selectedVars.value = selection
   emit('selection-change', selection)
 }
 

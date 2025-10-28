@@ -60,24 +60,51 @@ class NextKeyClient:
         encrypted = nonce + ciphertext + tag
         return base64.b64encode(encrypted).decode()
     
+    def decrypt(self, ciphertext):
+        """AES-GCM解密"""
+        data = base64.b64decode(ciphertext)
+        nonce = data[:12]
+        tag = data[-16:]
+        ciphertext = data[12:-16]
+        cipher = AES.new(self.aes_key, AES.MODE_GCM, nonce=nonce)
+        return cipher.decrypt_and_verify(ciphertext, tag).decode()
+    
     def generate_nonce(self):
         """生成随机nonce"""
         return secrets.token_urlsafe(24)
     
-    def make_encrypted_request(self, endpoint, data):
-        """发送加密请求"""
+    def make_encrypted_request(self, endpoint, data, method="POST"):
+        """发送加密请求并验证响应Nonce"""
+        # 生成并记住请求nonce
+        request_nonce = self.generate_nonce()
+        
         json_data = json.dumps(data)
         encrypted_data = self.encrypt(json_data)
         
         req_body = {
             "timestamp": int(time.time()),
-            "nonce": self.generate_nonce(),
+            "nonce": request_nonce,
             "data": encrypted_data
         }
         
         url = f"{self.server_url}{endpoint}"
-        response = self.session.post(url, json=req_body)
-        return response.json(), req_body
+        if method == "POST":
+            response = self.session.post(url, json=req_body)
+        else:
+            response = self.session.get(url, json=req_body)
+        
+        resp_json = response.json()
+        
+        # 验证响应nonce
+        if resp_json.get("nonce") != request_nonce:
+            raise ValueError("响应Nonce不匹配，可能遭受重放攻击！")
+        
+        # 解密响应数据
+        decrypted = self.decrypt(resp_json["data"])
+        result = json.loads(decrypted)
+        
+        # 返回解密后的结果、请求体和原始加密响应
+        return result, req_body, resp_json
     
     def login(self, card_key, hwid="", ip=""):
         """登录"""
@@ -90,38 +117,35 @@ class NextKeyClient:
         if ip:
             login_data["ip"] = ip
         
-        result, request = self.make_encrypted_request("/api/auth/login", login_data)
+        result, request, encrypted_response = self.make_encrypted_request("/api/auth/login", login_data)
         
         if result.get("code") == 0:
             self.token = result["data"]["token"]
             self.session.headers.update({"Authorization": f"Bearer {self.token}"})
         
-        return result, request
+        return result, request, encrypted_response
     
     def heartbeat(self):
         """心跳"""
-        url = f"{self.server_url}/api/heartbeat"
-        response = self.session.post(url)
-        return response.json()
+        result, _, _ = self.make_encrypted_request("/api/heartbeat", {})
+        return result
     
     def get_cloud_var(self, key):
         """获取云变量"""
-        url = f"{self.server_url}/api/cloud-var/{key}"
-        response = self.session.get(url)
-        return response.json()
+        result, _, _ = self.make_encrypted_request(f"/api/cloud-var/{key}", {}, method="GET")
+        return result
     
     def update_custom_data(self, custom_data):
-        """更新专属信息"""
-        url = f"{self.server_url}/api/card/custom-data"
-        data = {"custom_data": json.dumps(custom_data) if isinstance(custom_data, dict) else custom_data}
-        response = self.session.post(url, json=data)
-        return response.json()
+        """更新专属信息 - 支持任意字符串"""
+        # custom_data 可以是任意字符串，不限于 JSON
+        data = {"custom_data": custom_data}
+        result, _, _ = self.make_encrypted_request("/api/card/custom-data", data)
+        return result
     
     def get_project_info(self):
         """获取项目信息"""
-        url = f"{self.server_url}/api/project/info"
-        response = self.session.get(url)
-        return response.json()
+        result, _, _ = self.make_encrypted_request("/api/project/info", {}, method="GET")
+        return result
 
 
 class NextKeyGUI:
@@ -262,7 +286,7 @@ class NextKeyGUI:
         custom_frame = ttk.LabelFrame(parent, text="专属信息更新", padding=10)
         custom_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
-        ttk.Label(custom_frame, text="JSON数据:").pack(anchor=tk.W)
+        ttk.Label(custom_frame, text="专属数据（支持任意文本）:").pack(anchor=tk.W)
         self.custom_data_text = scrolledtext.ScrolledText(custom_frame, height=5, wrap=tk.WORD)
         self.custom_data_text.pack(fill=tk.BOTH, expand=True, pady=5)
         self.custom_data_text.insert(1.0, '{"user_level": 1, "points": 0}')
@@ -438,7 +462,7 @@ class NextKeyGUI:
         
         try:
             self.log(f"开始登录，卡密: {card_key}", "info")
-            result, request = self.client.login(
+            result, request, encrypted_response = self.client.login(
                 card_key,
                 self.hwid_var.get(),
                 self.ip_var.get()
@@ -453,8 +477,13 @@ class NextKeyGUI:
             self.token_text.insert(tk.END, f"Nonce: {request['nonce']}\n")
             self.token_text.insert(tk.END, f"加密数据: {request['data'][:50]}...\n\n")
             
-            # 响应信息
-            self.token_text.insert(tk.END, "=== 响应信息 ===\n", "info")
+            # 加密响应信息
+            self.token_text.insert(tk.END, "=== 加密响应 ===\n", "info")
+            self.token_text.insert(tk.END, f"响应Nonce: {encrypted_response.get('nonce', 'N/A')}\n")
+            self.token_text.insert(tk.END, f"加密数据: {encrypted_response.get('data', 'N/A')[:50]}...\n\n")
+            
+            # 解密后的响应信息
+            self.token_text.insert(tk.END, "=== 解密后的响应 ===\n", "info")
             self.token_text.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
             
             if result.get("code") == 0:
@@ -555,20 +584,17 @@ class NextKeyGUI:
         
         try:
             custom_data_str = self.custom_data_text.get(1.0, tk.END).strip()
-            custom_data = json.loads(custom_data_str)
             
-            result = self.client.update_custom_data(custom_data)
+            # 直接使用字符串，不强制要求 JSON 格式
+            result = self.client.update_custom_data(custom_data_str)
             
             if result.get("code") == 0:
-                self.log(f"专属信息更新成功: {custom_data}", "success")
+                self.log(f"专属信息更新成功: {custom_data_str}", "success")
                 messagebox.showinfo("成功", "专属信息更新成功")
             else:
                 self.log(f"更新专属信息失败: {result.get('message')}", "error")
                 messagebox.showerror("失败", f"更新失败: {result.get('message')}")
         
-        except json.JSONDecodeError:
-            messagebox.showerror("错误", "JSON格式错误")
-            self.log("JSON格式错误", "error")
         except Exception as e:
             self.log(f"更新专属信息异常: {e}", "error")
             messagebox.showerror("错误", f"更新异常: {e}")

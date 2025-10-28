@@ -2,7 +2,12 @@
   <div class="page-container">
     <el-card>
       <div class="header-actions">
-        <el-select v-model="selectedProjectId" placeholder="选择项目" style="width: 300px; margin-right: 10px;" @change="loadCards">
+        <el-select 
+          v-model="selectedProjectId" 
+          placeholder="选择项目" 
+          :style="isMobile ? 'width: 100%; order: -1;' : 'width: 300px; margin-right: 10px;'" 
+          @change="loadCards"
+        >
           <el-option
             v-for="project in projects"
             :key="project.id"
@@ -69,6 +74,7 @@ import { getCards, createCards, deleteCard, updateCard, batchUpdateCards, batchD
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePagination } from '@/composables/usePagination'
 import { useTableSelection } from '@/composables/useTableSelection'
+import { useResponsive } from '@/composables/useResponsive'
 import { secondsToUnitValue, unitValueToSeconds } from '@/composables/useDuration'
 import CardTable from '@/components/cards/CardTable.vue'
 import CardCreateDialog from '@/components/cards/CardCreateDialog.vue'
@@ -77,6 +83,7 @@ import CardDetailDialog from '@/components/cards/CardDetailDialog.vue'
 import CardBatchUpdateDialog from '@/components/cards/CardBatchUpdateDialog.vue'
 
 const route = useRoute()
+const { isMobile } = useResponsive()
 const loading = ref(false)
 const projects = ref([])
 const selectedProjectId = ref(null)

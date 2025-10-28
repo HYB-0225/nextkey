@@ -37,6 +37,30 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("项目不存在")
 	}
 
+	// 免费模式: 跳过所有验证,直接返回Token
+	if project.Mode == "free" {
+		tokenStr := uuid.New().String()
+		expireAt := time.Now().Add(time.Duration(project.TokenExpire) * time.Second)
+
+		token := &models.Token{
+			Token:     tokenStr,
+			CardID:    nil,
+			ProjectID: project.ID,
+			ExpireAt:  expireAt,
+		}
+
+		if err := database.DB.Create(token).Error; err != nil {
+			return nil, err
+		}
+
+		return &LoginResponse{
+			Token:    tokenStr,
+			ExpireAt: expireAt,
+			Card:     nil,
+		}, nil
+	}
+
+	// 付费模式: 完整验证逻辑
 	var card models.Card
 	if err := database.DB.Where("card_key = ? AND project_id = ?", req.CardKey, project.ID).First(&card).Error; err != nil {
 		return nil, errors.New("卡密不存在")
@@ -100,9 +124,10 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 	tokenStr := uuid.New().String()
 	expireAt := time.Now().Add(time.Duration(project.TokenExpire) * time.Second)
 
+	cardID := card.ID
 	token := &models.Token{
 		Token:     tokenStr,
-		CardID:    card.ID,
+		CardID:    &cardID,
 		ProjectID: project.ID,
 		ExpireAt:  expireAt,
 	}

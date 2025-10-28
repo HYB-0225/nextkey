@@ -4,28 +4,33 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nextkey/nextkey/backend/internal/middleware"
 	"github.com/nextkey/nextkey/backend/internal/service"
 	"github.com/nextkey/nextkey/backend/pkg/utils"
 )
 
 func UpdateCardCustomData(c *gin.Context) {
-	cardID, _ := c.Get("card_id")
+	cardID, exists := c.Get("card_id")
+	if !exists {
+		utils.EncryptedError(c, 400, "免费模式不支持此功能")
+		return
+	}
 
 	var req struct {
 		CustomData string `json:"custom_data"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Error(c, 400, "参数错误")
+	if err := middleware.GetDecryptedData(c, &req); err != nil {
+		utils.EncryptedError(c, 400, "参数错误")
 		return
 	}
 
 	cardSvc := service.NewCardService()
 	if err := cardSvc.UpdateCustomData(cardID.(uint), req.CustomData); err != nil {
-		utils.Error(c, 500, err.Error())
+		utils.EncryptedError(c, 500, err.Error())
 		return
 	}
 
-	utils.Success(c, gin.H{"message": "更新成功"})
+	utils.EncryptedSuccess(c, gin.H{"message": "更新成功"})
 }
 
 func CreateCards(c *gin.Context) {

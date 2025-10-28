@@ -6,8 +6,8 @@ export function useResponsive() {
   const isDesktop = ref(false)
   const windowWidth = ref(0)
   
-  const mobileQuery = window.matchMedia('(max-width: 767px)')
-  const tabletQuery = window.matchMedia('(min-width: 768px) and (max-width: 1023px)')
+  const mobileQuery = window.matchMedia('(max-width: 768px)')
+  const tabletQuery = window.matchMedia('(min-width: 769px) and (max-width: 1023px)')
   const desktopQuery = window.matchMedia('(min-width: 1024px)')
   
   const updateResponsiveState = () => {

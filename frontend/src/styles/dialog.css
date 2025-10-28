@@ -1,0 +1,215 @@
+/**
+ * 对话框通用样式
+ * 现代化、美观、响应式的对话框设计
+ */
+
+/* ==================== 基础对话框样式 ==================== */
+.modern-dialog :deep(.el-dialog) {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-2xl);
+  animation: dialog-fade-in 0.25s var(--ease-out);
+}
+
+.modern-dialog :deep(.el-dialog__headerbtn) {
+  top: 20px;
+  right: 20px;
+}
+
+.modern-dialog :deep(.el-dialog__close) {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.modern-dialog :deep(.el-dialog__close:hover) {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.modern-dialog :deep(.el-dialog__title) {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modern-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+  background: #fff;
+}
+
+.modern-dialog :deep(.el-dialog__footer) {
+  padding: 16px 24px;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ==================== 表单样式 ==================== */
+.modern-dialog :deep(.el-form-item) {
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.modern-dialog :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.modern-dialog :deep(.el-input__wrapper),
+.modern-dialog :deep(.el-textarea__inner),
+.modern-dialog :deep(.el-input-number) {
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.modern-dialog :deep(.el-input__wrapper:hover),
+.modern-dialog :deep(.el-textarea__inner:hover) {
+  border-color: var(--color-primary-light);
+}
+
+.modern-dialog :deep(.el-input.is-focus .el-input__wrapper),
+.modern-dialog :deep(.el-textarea__inner:focus) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+/* ==================== 按钮样式 ==================== */
+.modern-dialog :deep(.el-button) {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  padding: 10px 20px;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.modern-dialog :deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modern-dialog :deep(.el-button:active) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ==================== 渐变头部主题 ==================== */
+/* 主题色 - 紫色 */
+.modern-dialog.theme-primary :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+  border-bottom: none;
+}
+
+.modern-dialog.theme-primary :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.modern-dialog.theme-primary :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #7c8ef0 0%, #8b5bb0 100%);
+}
+
+/* 主题色 - 绿色 */
+.modern-dialog.theme-success :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  padding: 24px;
+  border-bottom: none;
+}
+
+.modern-dialog.theme-success :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  border: none;
+}
+
+.modern-dialog.theme-success :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #6bd132 0%, #8ae04d 100%);
+}
+
+/* 主题色 - 蓝色 */
+.modern-dialog.theme-info :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+  padding: 24px;
+  border-bottom: none;
+}
+
+.modern-dialog.theme-info :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+  border: none;
+}
+
+.modern-dialog.theme-info :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #40a9ff 0%, #5cdbd3 100%);
+}
+
+/* 主题色 - 橙色 */
+.modern-dialog.theme-warning :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #fa8c16 0%, #faad14 100%);
+  padding: 24px;
+  border-bottom: none;
+}
+
+.modern-dialog.theme-warning :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #fa8c16 0%, #faad14 100%);
+  border: none;
+}
+
+.modern-dialog.theme-warning :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #ffa940 0%, #ffc53d 100%);
+}
+
+/* ==================== 移动端适配 ==================== */
+@media (max-width: 768px) {
+  .modern-dialog :deep(.el-dialog) {
+    margin: 0 !important;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  
+  .modern-dialog :deep(.el-dialog.is-fullscreen) {
+    border-radius: 0;
+  }
+  
+  .modern-dialog :deep(.el-dialog__header) {
+    padding: 20px 16px !important;
+  }
+  
+  .modern-dialog :deep(.el-dialog__body) {
+    padding: 20px 16px;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modern-dialog :deep(.el-dialog__footer) {
+    padding: 12px 16px;
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modern-dialog :deep(.el-form-item) {
+    margin-bottom: 18px;
+  }
+  
+  .modern-dialog :deep(.el-form-item__label) {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .modern-dialog :deep(.el-button) {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+  
+  .modern-dialog :deep(.el-button:first-child) {
+    margin-top: 0;
+  }
+  
+  .modern-dialog :deep(.el-input-number),
+  .modern-dialog :deep(.el-select) {
+    width: 100%;
+  }
+}
+

@@ -9,7 +9,7 @@ import (
 type Token struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
 	Token     string         `gorm:"uniqueIndex;not null" json:"token"`
-	CardID    uint           `gorm:"not null;index" json:"card_id"`
+	CardID    *uint          `gorm:"index" json:"card_id"`
 	Card      *Card          `gorm:"foreignKey:CardID" json:"card,omitempty"`
 	ProjectID uint           `gorm:"not null;index" json:"project_id"`
 	ExpireAt  time.Time      `gorm:"not null" json:"expire_at"`

@@ -63,36 +63,49 @@ chmod +x nextkey
 git clone https://github.com/nextkey/nextkey.git
 cd nextkey
 
-# 2. 构建前端
+# 2. 使用构建脚本(推荐)
+./scripts/build.sh        # Linux/macOS
+scripts\build.bat         # Windows
+
+# 或手动构建
+# 2a. 构建前端
 cd frontend
 npm install
 npm run build
 cd ..
 
-# 3. 构建后端
-go mod download
-go build -o nextkey cmd/main.go
+# 2b. 复制前端到静态目录
+cp -r frontend/dist/* backend/cmd/static/  # Linux/macOS
+xcopy /E /I /Y frontend\dist\* backend\cmd\static\  # Windows
 
-# 4. 运行
+# 2c. 构建后端
+go mod download
+go build -o nextkey backend/cmd/main.go backend/cmd/embed.go
+
+# 3. 运行
 ./nextkey
 ```
 
 ### 跨平台编译
 
 ```bash
-# 使用构建脚本
+# 使用构建脚本(自动处理前端构建和复制)
 chmod +x scripts/build.sh
-./scripts/build.sh
+./scripts/build.sh        # Linux/macOS
+scripts\build.bat         # Windows
 
-# 或手动编译
+# 使用goreleaser(自行配置android-ndk)
+goreleaser build --snapshot --clean
+
+# 或手动编译(需先构建前端并复制到 backend/cmd/static/)
 # Windows
-GOOS=windows GOARCH=amd64 go build -o nextkey-windows-amd64.exe cmd/main.go
+GOOS=windows GOARCH=amd64 go build -o nextkey-windows-amd64.exe backend/cmd/main.go backend/cmd/embed.go
 
 # Linux
-GOOS=linux GOARCH=amd64 go build -o nextkey-linux-amd64 cmd/main.go
+GOOS=linux GOARCH=amd64 go build -o nextkey-linux-amd64 backend/cmd/main.go backend/cmd/embed.go
 
 # macOS
-GOOS=darwin GOARCH=amd64 go build -o nextkey-darwin-amd64 cmd/main.go
+GOOS=darwin GOARCH=amd64 go build -o nextkey-darwin-amd64 backend/cmd/main.go backend/cmd/embed.go
 ```
 
 ## 配置
@@ -141,7 +154,7 @@ python gui-test-client.py
 
 ```bash
 # 后端开发
-go run cmd/main.go
+go run backend/cmd/main.go backend/cmd/embed.go
 
 # 前端开发
 cd frontend

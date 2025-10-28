@@ -41,7 +41,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("token", &token)
-		c.Set("card_id", token.CardID)
+		if token.CardID != nil {
+			c.Set("card_id", *token.CardID)
+		}
 		c.Set("project_id", token.ProjectID)
 		c.Next()
 	}

@@ -15,11 +15,11 @@ func GetCloudVar(c *gin.Context) {
 	cloudVarSvc := service.NewCloudVarService()
 	cloudVar, err := cloudVarSvc.Get(projectID.(uint), key)
 	if err != nil {
-		utils.Error(c, 404, err.Error())
+		utils.EncryptedError(c, 404, err.Error())
 		return
 	}
 
-	utils.Success(c, cloudVar)
+	utils.EncryptedSuccess(c, cloudVar)
 }
 
 func SetCloudVar(c *gin.Context) {

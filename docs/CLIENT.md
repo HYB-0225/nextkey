@@ -205,6 +205,67 @@ func encrypt(aesKey []byte, plaintext string) (string, error) {
 }
 ```
 
+### 响应格式与Nonce验证
+
+**重要安全机制**: 从v1.1开始，所有敏感接口（卡密登录、心跳、云变量、卡密专属信息）的响应都会回显客户端发送的Nonce，防止重放攻击。
+
+#### 响应结构
+
+```json
+{
+  "nonce": "客户端请求时发送的nonce",
+  "data": "Base64编码的AES加密响应数据"
+}
+```
+
+#### 响应验证流程
+
+1. **记录发送的Nonce**: 客户端发送请求时，保存当前请求的 `nonce` 值
+2. **接收响应**: 获取服务器返回的响应
+3. **验证Nonce匹配**: 检查响应中的 `nonce` 字段是否与发送的一致
+4. **Base64解码**: 解码响应中的 `data` 字段
+5. **AES-GCM解密**: 使用密钥解密数据
+6. **解析业务数据**: 解析得到标准响应格式（`code`、`message`、`data`）
+
+#### Python示例
+
+```python
+def make_encrypted_request(self, endpoint, data):
+    """发送加密请求并验证响应"""
+    # 1. 生成并记住nonce
+    request_nonce = secrets.token_urlsafe(24)
+    
+    # 2. 加密请求数据
+    json_data = json.dumps(data)
+    encrypted_data = self.encrypt(json_data)
+    
+    req_body = {
+        "timestamp": int(time.time()),
+        "nonce": request_nonce,  # 记住这个nonce
+        "data": encrypted_data
+    }
+    
+    # 3. 发送请求
+    response = self.session.post(f"{self.server_url}{endpoint}", json=req_body)
+    resp_json = response.json()
+    
+    # 4. 验证响应nonce
+    if resp_json.get("nonce") != request_nonce:
+        raise ValueError("响应Nonce不匹配，可能遭受重放攻击！")
+    
+    # 5. 解密响应数据
+    decrypted = self.decrypt(resp_json["data"])
+    
+    # 6. 解析业务数据
+    return json.loads(decrypted)
+```
+
+#### 安全性说明
+
+- **防重放攻击**: 即使攻击者抓取了完整的响应数据包，也无法将其用于其他请求，因为每次请求的Nonce都不同
+- **防静态注入**: 攻击者无法伪造合法的响应，因为必须知道客户端刚刚发送的Nonce
+- **双向验证**: 结合请求Nonce验证（服务端）和响应Nonce验证（客户端），形成完整的防护链
+
 ### 解密流程
 
 服务端处理流程：

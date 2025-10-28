@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useResponsive } from '@/composables/useResponsive'
@@ -120,6 +120,13 @@ const { isMobile, isTablet } = useResponsive()
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
+
+// 监听路由变化,自动关闭移动端侧边栏
+watch(() => route.path, () => {
+  if (isMobile.value) {
+    mobileMenuOpen.value = false
+  }
+})
 
 const sidebarWidth = computed(() => {
   if (isMobile.value) return '240px'
@@ -408,7 +415,8 @@ const handleLogout = () => {
     top: 0;
     height: 100vh;
     transform: translateX(0);
-    transition: transform var(--duration-normal) var(--ease-out);
+    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.2);
   }
   
   .sidebar.mobile-hidden {
@@ -420,6 +428,7 @@ const handleLogout = () => {
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 99;
+    animation: fade-in var(--duration-fast) ease-out;
   }
   
   .header {
@@ -432,6 +441,16 @@ const handleLogout = () => {
   
   .main-content {
     padding: 16px;
+  }
+  
+  /* 优化触摸体验 */
+  .sidebar-menu {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 移动端菜单项点击反馈 */
+  :deep(.el-menu-item:active) {
+    opacity: 0.8;
   }
 }
 

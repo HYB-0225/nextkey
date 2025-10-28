@@ -3,7 +3,7 @@
     <el-alert type="info" :closable="false" style="margin-bottom: 20px;">
       已选择 {{ selectedCount }} 个卡密,只修改填写的字段
     </el-alert>
-    <el-form :model="form" label-width="120px">
+    <el-form :model="form" :label-width="isMobile ? '0px' : '120px'" :label-position="isMobile ? 'top' : 'right'">
       <el-form-item label="有效时长">
         <el-checkbox v-model="form.update_duration" style="margin-bottom: 10px;">
           修改时长
@@ -59,6 +59,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useResponsive } from '@/composables/useResponsive'
+
+const { isMobile } = useResponsive()
 
 const props = defineProps({
   visible: {
@@ -191,6 +194,18 @@ const handleSave = () => {
   :deep(.el-dialog) {
     width: 90% !important;
     margin: 20px auto;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-form-item__label) {
+    margin-bottom: 6px;
   }
 }
 </style>

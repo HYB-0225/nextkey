@@ -45,13 +45,34 @@
 4. AES-256-GCM解密
 5. 解析JSON数据
 
+### 响应格式
+
+客户端敏感接口（卡密登录、心跳、云变量、卡密专属信息）的响应会携带Nonce进行加密：
+
+```json
+{
+  "nonce": "客户端请求时发送的nonce",
+  "data": "Base64编码的AES加密响应数据"
+}
+```
+
+**响应验证流程**:
+
+1. 客户端发送请求时记录发送的nonce
+2. 收到响应后，验证响应中的`nonce`字段是否与发送的一致
+3. Base64解码`data`字段
+4. 使用AES-256-GCM解密
+5. 解析JSON获取实际的响应数据（包含`code`、`message`、`data`字段）
+
+**安全性**: 此机制防止攻击者将旧的有效响应重放给新的请求，即使响应被抓包，也无法用于其他请求。
+
 ## 客户端 API
 
 ### 1. 卡密登录
 
 **接口**: `POST /api/auth/login`
 
-**需要加密**: 是
+**需要加密**: 是（请求和响应）
 
 **请求参数**:
 ```json
@@ -63,17 +84,29 @@
 }
 ```
 
-**响应数据**:
+**响应格式**:
 ```json
 {
-  "token": "认证Token",
-  "expire_at": "2024-01-01T00:00:00Z",
-  "card": {
-    "id": 1,
-    "card_key": "xxx",
-    "activated": true,
-    "duration": 2592000,
-    "custom_data": "专属信息"
+  "nonce": "请求时的nonce",
+  "data": "加密的响应数据"
+}
+```
+
+**解密后的响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "token": "认证Token",
+    "expire_at": "2024-01-01T00:00:00Z",
+    "card": {
+      "id": 1,
+      "card_key": "xxx",
+      "activated": true,
+      "duration": 2592000,
+      "custom_data": "专属信息"
+    }
   }
 }
 ```
@@ -84,10 +117,24 @@
 
 **需要认证**: 是（Header: `Authorization: Bearer {token}`）
 
-**响应数据**:
+**需要加密**: 是（请求和响应）
+
+**响应格式**:
 ```json
 {
-  "message": "心跳成功"
+  "nonce": "请求时的nonce",
+  "data": "加密的响应数据"
+}
+```
+
+**解密后的响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "message": "心跳成功"
+  }
 }
 ```
 
@@ -97,13 +144,29 @@
 
 **需要认证**: 是
 
-**响应数据**:
+**需要加密**: 是（请求和响应）
+
+**请求说明**: GET 请求也需要发送加密的请求体（包含 timestamp、nonce、data 字段）
+
+**响应格式**:
 ```json
 {
-  "id": 1,
-  "project_id": 1,
-  "key": "变量名",
-  "value": "变量值"
+  "nonce": "请求时的nonce",
+  "data": "加密的响应数据"
+}
+```
+
+**解密后的响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "project_id": 1,
+    "key": "变量名",
+    "value": "变量值"
+  }
 }
 ```
 
@@ -113,10 +176,31 @@
 
 **需要认证**: 是
 
+**需要加密**: 是（请求和响应）
+
 **请求参数**:
 ```json
 {
   "custom_data": "JSON字符串"
+}
+```
+
+**响应格式**:
+```json
+{
+  "nonce": "请求时的nonce",
+  "data": "加密的响应数据"
+}
+```
+
+**解密后的响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "message": "更新成功"
+  }
 }
 ```
 
@@ -126,13 +210,29 @@
 
 **需要认证**: 是
 
-**响应数据**:
+**需要加密**: 是（请求和响应）
+
+**请求说明**: GET 请求也需要发送加密的请求体（包含 timestamp、nonce、data 字段）
+
+**响应格式**:
 ```json
 {
-  "uuid": "项目UUID",
-  "name": "项目名称",
-  "version": "1.0.0",
-  "update_url": "更新地址"
+  "nonce": "请求时的nonce",
+  "data": "加密的响应数据"
+}
+```
+
+**解密后的响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "uuid": "项目UUID",
+    "name": "项目名称",
+    "version": "1.0.0",
+    "update_url": "更新地址"
+  }
 }
 ```
 

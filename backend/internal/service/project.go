@@ -20,6 +20,7 @@ type CreateProjectRequest struct {
 	EnableHWID  bool   `json:"enable_hwid"`
 	EnableIP    bool   `json:"enable_ip"`
 	Version     string `json:"version"`
+	UpdateURL   string `json:"update_url"`
 	TokenExpire int    `json:"token_expire"`
 	Description string `json:"description"`
 }
@@ -32,6 +33,7 @@ func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, err
 		EnableHWID:  req.EnableHWID,
 		EnableIP:    req.EnableIP,
 		Version:     req.Version,
+		UpdateURL:   req.UpdateURL,
 		TokenExpire: req.TokenExpire,
 		Description: req.Description,
 	}
@@ -59,6 +61,14 @@ func (s *ProjectService) GetByUUID(uuid string) (*models.Project, error) {
 	return &project, nil
 }
 
+func (s *ProjectService) GetByID(id uint) (*models.Project, error) {
+	var project models.Project
+	if err := database.DB.First(&project, id).Error; err != nil {
+		return nil, errors.New("项目不存在")
+	}
+	return &project, nil
+}
+
 func (s *ProjectService) Update(id uint, req *CreateProjectRequest) (*models.Project, error) {
 	var project models.Project
 	if err := database.DB.First(&project, id).Error; err != nil {
@@ -70,6 +80,7 @@ func (s *ProjectService) Update(id uint, req *CreateProjectRequest) (*models.Pro
 	project.EnableHWID = req.EnableHWID
 	project.EnableIP = req.EnableIP
 	project.Version = req.Version
+	project.UpdateURL = req.UpdateURL
 	project.TokenExpire = req.TokenExpire
 	project.Description = req.Description
 
@@ -106,6 +117,7 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 			EnableHWID:  req.EnableHWID,
 			EnableIP:    req.EnableIP,
 			Version:     req.Version,
+			UpdateURL:   req.UpdateURL,
 			TokenExpire: req.TokenExpire,
 			Description: req.Description,
 		}

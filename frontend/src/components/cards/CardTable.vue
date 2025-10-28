@@ -1,58 +1,81 @@
 <template>
   <div>
-    <el-table :data="cards" style="width: 100%;" v-loading="loading" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" />
-      <el-table-column prop="card_key" label="卡密" min-width="200" show-overflow-tooltip />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.activated ? 'success' : 'info'">
-            {{ row.activated ? '已激活' : '未激活' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="有效时长" width="120">
-        <template #default="{ row }">
-          {{ formatDuration(row.duration) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="card_type" label="类型" width="100" />
-      <el-table-column prop="note" label="备注" min-width="120" show-overflow-tooltip />
-      <el-table-column label="设备限制" width="120">
-        <template #default="{ row }">
-          {{ row.hwid_list?.length || 0 }} / {{ row.max_hwid === -1 ? '∞' : row.max_hwid }}
-        </template>
-      </el-table-column>
-      <el-table-column label="IP限制" width="120">
-        <template #default="{ row }">
-          {{ row.ip_list?.length || 0 }} / {{ row.max_ip === -1 ? '∞' : row.max_ip }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="250" :fixed="isDesktop ? 'right' : false" class-name="action-column">
-        <template #default="{ row }">
-          <ActionButtons :actions="getRowActions(row)" />
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 桌面端表格视图 -->
+    <template v-if="!isMobile">
+      <el-table :data="cards" style="width: 100%;" v-loading="loading" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="card_key" label="卡密" min-width="200" show-overflow-tooltip />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.activated ? 'success' : 'info'">
+              {{ row.activated ? '已激活' : '未激活' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效时长" width="120">
+          <template #default="{ row }">
+            {{ formatDuration(row.duration) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="card_type" label="类型" width="100" />
+        <el-table-column prop="note" label="备注" min-width="120" show-overflow-tooltip />
+        <el-table-column label="设备限制" width="120">
+          <template #default="{ row }">
+            {{ row.hwid_list?.length || 0 }} / {{ row.max_hwid === -1 ? '∞' : row.max_hwid }}
+          </template>
+        </el-table-column>
+        <el-table-column label="IP限制" width="120">
+          <template #default="{ row }">
+            {{ row.ip_list?.length || 0 }} / {{ row.max_ip === -1 ? '∞' : row.max_ip }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="250" :fixed="isDesktop ? 'right' : false" class-name="action-column">
+          <template #default="{ row }">
+            <ActionButtons :actions="getRowActions(row)" />
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <el-pagination
+        v-if="total > 0"
+        style="margin-top: 20px; justify-content: flex-end;"
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        layout="total, prev, pager, next"
+        @current-change="handlePageChange"
+      />
+    </template>
     
-    <el-pagination
-      v-if="total > 0"
-      style="margin-top: 20px; justify-content: flex-end;"
-      :current-page="page"
+    <!-- 移动端卡片视图 -->
+    <CardListMobile
+      v-else
+      :cards="cards"
+      :loading="loading"
+      :page="page"
       :page-size="pageSize"
       :total="total"
-      layout="total, prev, pager, next"
-      @current-change="handlePageChange"
+      :selected-cards="selectedCards"
+      @selection-change="handleSelectionChange"
+      @page-change="handlePageChange"
+      @edit="(row) => $emit('edit', row)"
+      @view="(row) => $emit('view', row)"
+      @delete="(row) => $emit('delete', row)"
     />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { Edit, View, Delete } from '@element-plus/icons-vue'
 import { formatDuration } from '@/composables/useDuration'
 import ActionButtons from '@/components/common/ActionButtons.vue'
+import CardListMobile from './CardListMobile.vue'
 import { useResponsive } from '@/composables/useResponsive'
 
-const { isDesktop } = useResponsive()
+const { isMobile, isDesktop } = useResponsive()
+
+const selectedCards = ref([])
 
 const props = defineProps({
   cards: {
@@ -80,6 +103,7 @@ const props = defineProps({
 const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view', 'delete'])
 
 const handleSelectionChange = (selection) => {
+  selectedCards.value = selection
   emit('selection-change', selection)
 }
 

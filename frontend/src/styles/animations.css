@@ -42,14 +42,26 @@
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   
   /* 过渡时间 */
+  --duration-instant: 100ms;
   --duration-fast: 150ms;
   --duration-normal: 300ms;
   --duration-slow: 500ms;
+  --duration-slower: 700ms;
   
-  /* 缓动函数 */
+  /* 缓动函数 - 标准 */
   --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  
+  /* 缓动函数 - 特殊效果 */
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 弹簧物理参数 (用于JS动画) */
+  --spring-stiffness: 300;
+  --spring-damping: 30;
+  --spring-mass: 1;
   
   /* 间距系统 */
   --spacing-1: 4px;
@@ -378,6 +390,31 @@
   .mobile-hidden {
     display: none !important;
   }
+  
+  /* 移动端字体缩放 */
+  body {
+    font-size: 14px;
+  }
+  
+  /* 优化移动端滚动 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 移动端滚动条优化 */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 @media (min-width: 769px) {
@@ -396,5 +433,175 @@
   .desktop-only {
     display: block !important;
   }
+}
+
+/* ==================== 触摸反馈 ==================== */
+@media (hover: none) and (pointer: coarse) {
+  /* 移动端触摸反馈 */
+  .touch-feedback:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  
+  button:active,
+  .el-button:active {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+}
+
+/* ==================== 按钮微交互增强 ==================== */
+.btn-hover-lift {
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 按钮涟漪容器 */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ==================== 对话框动画 ==================== */
+.dialog-fade-enter-active {
+  animation: dialog-fade-in var(--duration-normal) var(--ease-out);
+}
+
+.dialog-fade-leave-active {
+  animation: dialog-fade-out var(--duration-fast) var(--ease-in-out);
+}
+
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dialog-fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* 移动端对话框 - 底部滑入 */
+.dialog-slide-up-enter-active {
+  animation: dialog-slide-up-in var(--duration-normal) var(--ease-out);
+}
+
+.dialog-slide-up-leave-active {
+  animation: dialog-slide-up-out var(--duration-normal) var(--ease-in-out);
+}
+
+@keyframes dialog-slide-up-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialog-slide-up-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* ==================== 表格行动画 ==================== */
+.table-row-hover {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.table-row-hover:hover {
+  background-color: var(--color-bg-tertiary) !important;
+  transform: translateX(2px);
+}
+
+.table-row-selected {
+  background-color: rgba(24, 144, 255, 0.08) !important;
+  border-left: 3px solid var(--color-primary);
+}
+
+/* ==================== 加载动画增强 ==================== */
+@keyframes spin-smooth {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-smooth {
+  animation: spin-smooth 1s var(--ease-smooth) infinite;
+}
+
+/* ==================== 数字滚动动画 ==================== */
+@keyframes number-roll {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.number-roll {
+  animation: number-roll 0.6s var(--ease-out);
+}
+
+/* ==================== 进度条动画 ==================== */
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-indeterminate {
+  animation: progress-indeterminate 1.5s var(--ease-in-out) infinite;
+}
+
+/* ==================== 闪烁高亮 ==================== */
+@keyframes highlight-flash {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(24, 144, 255, 0.2);
+  }
+}
+
+.highlight-flash {
+  animation: highlight-flash 1s var(--ease-smooth);
 }
 

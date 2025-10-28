@@ -60,6 +60,7 @@ func DecryptMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("decrypted_data", plaintext)
+		c.Set("request_nonce", encReq.Nonce)
 		c.Next()
 	}
 }

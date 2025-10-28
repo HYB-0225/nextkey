@@ -2,7 +2,12 @@
   <div class="page-container">
     <el-card>
       <div class="header-actions">
-        <el-select v-model="selectedProjectId" placeholder="选择项目" style="width: 300px; margin-right: 10px;" @change="loadCloudVars">
+        <el-select 
+          v-model="selectedProjectId" 
+          placeholder="选择项目" 
+          :style="isMobile ? 'width: 100%; order: -1;' : 'width: 300px; margin-right: 10px;'" 
+          @change="loadCloudVars"
+        >
           <el-option v-for="project in projects" :key="project.id" :label="project.name" :value="project.id" />
         </el-select>
         <el-button type="primary" @click="handleCreate" :disabled="!selectedProjectId">
@@ -49,11 +54,13 @@ import { getProjects } from '@/api/project'
 import { getCloudVars, setCloudVar, deleteCloudVar, batchSetCloudVars, batchDeleteCloudVars } from '@/api/cloudvar'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTableSelection } from '@/composables/useTableSelection'
+import { useResponsive } from '@/composables/useResponsive'
 import CloudVarTable from '@/components/cloudvars/CloudVarTable.vue'
 import CloudVarFormDialog from '@/components/cloudvars/CloudVarFormDialog.vue'
 import CloudVarBatchImportDialog from '@/components/cloudvars/CloudVarBatchImportDialog.vue'
 
 const route = useRoute()
+const { isMobile } = useResponsive()
 const loading = ref(false)
 const projects = ref([])
 const selectedProjectId = ref(null)

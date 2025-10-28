@@ -36,29 +36,27 @@ func main() {
 	if err != nil {
 		log.Printf("前端文件未找到，跳过静态文件服务: %v", err)
 	} else {
-		router.NoRoute(func(c *gin.Context) {
-			path := c.Request.URL.Path[1:]
-			if path == "" {
-				path = "index.html"
-			}
+		// 注册 /assets 路由用于静态资源
+		assetsFS, err := fs.Sub(distFS, "assets")
+		if err == nil {
+			router.StaticFS("/assets", http.FS(assetsFS))
+		}
 
-			file, err := distFS.Open(path)
+		// SPA fallback: 所有未匹配路由返回 index.html
+		router.NoRoute(func(c *gin.Context) {
+			data, err := fs.ReadFile(distFS, "index.html")
 			if err != nil {
-				indexFile, _ := distFS.Open("index.html")
-				if indexFile != nil {
-					c.FileFromFS("index.html", http.FS(distFS))
-				}
+				c.String(500, "无法读取前端文件")
 				return
 			}
-			defer file.Close()
-			c.FileFromFS(path, http.FS(distFS))
+			c.Data(200, "text/html; charset=utf-8", data)
 		})
 	}
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	fmt.Printf("\n🚀 NextKey 服务启动成功\n")
-	fmt.Printf("📍 访问地址: http://localhost%s\n", addr)
-	fmt.Printf("👤 默认账号: admin / admin123\n\n")
+	fmt.Printf("\nNextKey 服务启动成功\n")
+	fmt.Printf("访问地址: http://localhost%s\n", addr)
+	fmt.Printf("默认账号: admin / admin123\n\n")
 
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("服务启动失败: %v", err)

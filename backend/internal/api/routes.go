@@ -13,10 +13,11 @@ func RegisterRoutes(r *gin.Engine) {
 		authenticated := api.Group("")
 		authenticated.Use(middleware.AuthMiddleware())
 		{
-			authenticated.POST("/heartbeat", Heartbeat)
-			authenticated.GET("/cloud-var/:key", GetCloudVar)
-			authenticated.POST("/card/custom-data", UpdateCardCustomData)
-			authenticated.GET("/project/info", GetProjectInfo)
+			// 需要加密的请求
+			authenticated.POST("/heartbeat", middleware.DecryptMiddleware(), Heartbeat)
+			authenticated.POST("/card/custom-data", middleware.DecryptMiddleware(), UpdateCardCustomData)
+			authenticated.GET("/cloud-var/:key", middleware.DecryptMiddleware(), GetCloudVar)
+			authenticated.GET("/project/info", middleware.DecryptMiddleware(), GetProjectInfo)
 		}
 	}
 
