@@ -29,12 +29,14 @@ type CreateCardRequest struct {
 }
 
 type UpdateCardRequest struct {
-	Duration   *int    `json:"duration"`
-	Note       *string `json:"note"`
-	CardType   *string `json:"card_type"`
-	MaxHWID    *int    `json:"max_hwid"`
-	MaxIP      *int    `json:"max_ip"`
-	CustomData *string `json:"custom_data"`
+	Duration   *int                `json:"duration"`
+	Note       *string             `json:"note"`
+	CardType   *string             `json:"card_type"`
+	MaxHWID    *int                `json:"max_hwid"`
+	MaxIP      *int                `json:"max_ip"`
+	CustomData *string             `json:"custom_data"`
+	HWIDList   *models.StringArray `json:"hwid_list"`
+	IPList     *models.StringArray `json:"ip_list"`
 }
 
 func (s *CardService) CreateBatch(req *CreateCardRequest) ([]models.Card, error) {
@@ -130,6 +132,12 @@ func (s *CardService) Update(id uint, req *UpdateCardRequest) (*models.Card, err
 	if req.CustomData != nil {
 		card.CustomData = *req.CustomData
 	}
+	if req.HWIDList != nil {
+		card.HWIDList = *req.HWIDList
+	}
+	if req.IPList != nil {
+		card.IPList = *req.IPList
+	}
 
 	if err := database.DB.Save(&card).Error; err != nil {
 		return nil, err
@@ -198,6 +206,12 @@ func (s *CardService) BatchUpdate(ids []uint, req *UpdateCardRequest) error {
 	}
 	if req.CustomData != nil {
 		updates["custom_data"] = *req.CustomData
+	}
+	if req.HWIDList != nil {
+		updates["hwid_list"] = *req.HWIDList
+	}
+	if req.IPList != nil {
+		updates["ip_list"] = *req.IPList
 	}
 
 	if len(updates) == 0 {

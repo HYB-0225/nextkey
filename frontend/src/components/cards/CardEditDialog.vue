@@ -46,6 +46,57 @@
       <el-form-item label="专属信息">
         <el-input v-model="form.custom_data" type="textarea" :rows="3" />
       </el-form-item>
+      
+      <el-form-item label="设备码列表">
+        <div style="width: 100%;">
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <el-input 
+              v-model="newHWID" 
+              placeholder="输入设备码" 
+              @keyup.enter="handleAddHWID"
+              style="flex: 1;"
+            />
+            <el-button type="primary" @click="handleAddHWID">添加</el-button>
+          </div>
+          <div v-if="form.hwid_list && form.hwid_list.length > 0" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <el-tag 
+              v-for="(hwid, index) in form.hwid_list" 
+              :key="index"
+              closable
+              @close="handleRemoveHWID(index)"
+            >
+              {{ hwid }}
+            </el-tag>
+          </div>
+          <div v-else style="color: #999; font-size: 12px;">暂无设备码</div>
+        </div>
+      </el-form-item>
+      
+      <el-form-item label="IP列表">
+        <div style="width: 100%;">
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <el-input 
+              v-model="newIP" 
+              placeholder="输入IP地址" 
+              @keyup.enter="handleAddIP"
+              style="flex: 1;"
+            />
+            <el-button type="primary" @click="handleAddIP">添加</el-button>
+          </div>
+          <div v-if="form.ip_list && form.ip_list.length > 0" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <el-tag 
+              v-for="(ip, index) in form.ip_list" 
+              :key="index"
+              closable
+              @close="handleRemoveIP(index)"
+              type="success"
+            >
+              {{ ip }}
+            </el-tag>
+          </div>
+          <div v-else style="color: #999; font-size: 12px;">暂无IP地址</div>
+        </div>
+      </el-form-item>
     </el-form>
     
       <template #footer>
@@ -86,8 +137,13 @@ const form = ref({
   max_hwid: -1,
   max_ip: -1,
   note: '',
-  custom_data: ''
+  custom_data: '',
+  hwid_list: [],
+  ip_list: []
 })
+
+const newHWID = ref('')
+const newIP = ref('')
 
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
@@ -109,6 +165,38 @@ const handleClose = () => {
 
 const handleSave = () => {
   emit('save', form.value)
+}
+
+const handleAddHWID = () => {
+  if (newHWID.value.trim()) {
+    if (!form.value.hwid_list) {
+      form.value.hwid_list = []
+    }
+    if (!form.value.hwid_list.includes(newHWID.value.trim())) {
+      form.value.hwid_list.push(newHWID.value.trim())
+      newHWID.value = ''
+    }
+  }
+}
+
+const handleRemoveHWID = (index) => {
+  form.value.hwid_list.splice(index, 1)
+}
+
+const handleAddIP = () => {
+  if (newIP.value.trim()) {
+    if (!form.value.ip_list) {
+      form.value.ip_list = []
+    }
+    if (!form.value.ip_list.includes(newIP.value.trim())) {
+      form.value.ip_list.push(newIP.value.trim())
+      newIP.value = ''
+    }
+  }
+}
+
+const handleRemoveIP = (index) => {
+  form.value.ip_list.splice(index, 1)
 }
 
 const handleOpened = () => {

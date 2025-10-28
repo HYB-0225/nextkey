@@ -180,7 +180,9 @@ const handleEdit = (row) => {
     max_hwid: row.max_hwid,
     max_ip: row.max_ip,
     note: row.note,
-    custom_data: row.custom_data || ''
+    custom_data: row.custom_data || '',
+    hwid_list: row.hwid_list || [],
+    ip_list: row.ip_list || []
   }
   editDialogVisible.value = true
 }
@@ -195,7 +197,9 @@ const handleEditSave = async (formData) => {
       max_hwid: formData.max_hwid,
       max_ip: formData.max_ip,
       note: formData.note,
-      custom_data: formData.custom_data
+      custom_data: formData.custom_data,
+      hwid_list: formData.hwid_list,
+      ip_list: formData.ip_list
     })
     ElMessage.success('保存成功')
     editDialogVisible.value = false
