@@ -1,0 +1,46 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend static files (keep .gitkeep only)
+backend/cmd/static/*
+!backend/cmd/static/.gitkeep
+!backend/cmd/static/README.md
+
+# Build
+nextkey
+nextkey-*
+build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+

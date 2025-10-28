@@ -1,0 +1,13 @@
+server:
+    port: 8080
+    mode: release
+database:
+    path: ./nextkey.db
+security:
+    aes_key: 632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037
+    jwt_secret: 91a762c70bab0c214c85643d338b0a809391d5aa255f2f4a2c53866643b308b8
+    token_expire: 3600
+    replay_window: 300
+admin:
+    username: admin
+    password: admin123

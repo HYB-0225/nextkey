@@ -1,0 +1,47 @@
+# 占位文件说明
+
+此文件用于保持 `static` 目录在 Git 仓库中被跟踪。
+
+## 为什么需要这个文件？
+
+Git 不跟踪空目录，只跟踪文件。`static` 目录在开发阶段是空的，但 Go 的 embed 指令需要这个目录存在才能编译通过。
+
+## 工作流程
+
+1. **开发阶段**: 
+   - 后端直接运行时，前端使用 Vite 开发服务器（`npm run dev`）
+   - 此目录保持空状态（只有此占位文件）
+   - Go embed 会嵌入空目录，程序跳过静态文件服务
+
+2. **构建阶段**:
+   - 运行 `scripts/build.sh` 或 `scripts/build.bat`
+   - 前端构建产物会被复制到 `backend/cmd/static/` 目录
+   - Go embed 将前端文件嵌入到二进制文件中
+   - 最终二进制包含完整的前端资源
+
+3. **部署阶段**:
+   - 单一二进制文件，无需额外的前端文件
+   - 访问 http://localhost:8080 即可使用完整功能
+
+## 构建命令
+
+```bash
+# 完整构建（包含前端）
+./scripts/build.sh
+
+# 仅开发运行（不需要前端构建）
+go run backend/cmd/main.go backend/cmd/embed.go
+```
+
+## 目录结构
+
+```
+backend/cmd/
+├── static/              # 静态资源目录
+│   ├── .gitkeep        # 占位文件（开发时）
+│   ├── index.html      # 前端入口（构建后）
+│   └── assets/         # 前端资源（构建后）
+├── embed.go            # embed 声明文件
+└── main.go             # 主程序入口
+```
+
