@@ -1,36 +1,105 @@
 <template>
   <el-container class="layout-container">
-    <el-aside width="200px">
-      <div class="logo">NextKey</div>
+    <!-- 侧边栏 -->
+    <el-aside 
+      :width="sidebarWidth" 
+      :class="['sidebar', { 'collapsed': sidebarCollapsed, 'mobile-hidden': isMobile && !mobileMenuOpen }]"
+    >
+      <div class="logo" @click="toggleSidebar">
+        <div class="logo-icon">
+          <div class="logo-gradient"></div>
+        </div>
+        <transition name="fade">
+          <span v-if="!sidebarCollapsed" class="logo-text">NextKey</span>
+        </transition>
+      </div>
+      
       <el-menu
         :default-active="activeMenu"
         router
-        class="el-menu-vertical"
+        :collapse="sidebarCollapsed"
+        class="sidebar-menu"
       >
-        <el-menu-item index="/projects">
+        <el-menu-item index="/projects" class="menu-item">
           <el-icon><Box /></el-icon>
-          <span>项目管理</span>
+          <template #title>
+            <span>项目管理</span>
+          </template>
         </el-menu-item>
-        <el-menu-item index="/cards">
+        <el-menu-item index="/cards" class="menu-item">
           <el-icon><Ticket /></el-icon>
-          <span>卡密管理</span>
+          <template #title>
+            <span>卡密管理</span>
+          </template>
         </el-menu-item>
-        <el-menu-item index="/cloudvars">
+        <el-menu-item index="/cloudvars" class="menu-item">
           <el-icon><Cloudy /></el-icon>
-          <span>云变量</span>
+          <template #title>
+            <span>云变量</span>
+          </template>
         </el-menu-item>
       </el-menu>
+      
+      <!-- 侧边栏底部折叠按钮 -->
+      <div class="sidebar-footer" @click="toggleSidebar" v-if="!isMobile">
+        <el-icon :class="['toggle-icon', { 'rotated': sidebarCollapsed }]">
+          <DArrowLeft />
+        </el-icon>
+        <transition name="fade">
+          <span v-if="!sidebarCollapsed" class="toggle-text">收起</span>
+        </transition>
+      </div>
     </el-aside>
     
-    <el-container>
-      <el-header>
+    <!-- 移动端遮罩层 -->
+    <transition name="fade">
+      <div 
+        v-if="isMobile && mobileMenuOpen" 
+        class="mobile-overlay"
+        @click="closeMobileMenu"
+      ></div>
+    </transition>
+    
+    <el-container class="main-container">
+      <el-header class="header">
         <div class="header-content">
-          <h2>{{ pageTitle }}</h2>
-          <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
+          <div class="header-left">
+            <!-- 移动端菜单按钮 -->
+            <button 
+              v-if="isMobile" 
+              class="mobile-menu-btn"
+              @click="toggleMobileMenu"
+            >
+              <el-icon><Menu /></el-icon>
+            </button>
+            
+            <!-- 桌面端折叠按钮 -->
+            <button 
+              v-else 
+              class="collapse-btn"
+              @click="toggleSidebar"
+            >
+              <el-icon><Expand /></el-icon>
+            </button>
+            
+            <h2 class="page-title">{{ pageTitle }}</h2>
+          </div>
+          
+          <div class="header-right">
+            <el-button 
+              type="danger" 
+              plain 
+              @click="handleLogout"
+              :icon="isMobile ? '' : undefined"
+            >
+              {{ isMobile ? '' : '退出登录' }}
+              <el-icon v-if="isMobile"><SwitchButton /></el-icon>
+            </el-button>
+          </div>
         </div>
       </el-header>
       
-      <el-main>
+      <el-main class="main-content">
         <router-view />
       </el-main>
     </el-container>
@@ -38,14 +107,24 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useResponsive } from '@/composables/useResponsive'
 import { ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { isMobile, isTablet } = useResponsive()
+
+const sidebarCollapsed = ref(false)
+const mobileMenuOpen = ref(false)
+
+const sidebarWidth = computed(() => {
+  if (isMobile.value) return '240px'
+  return sidebarCollapsed.value ? '64px' : '200px'
+})
 
 const activeMenu = computed(() => route.path)
 
@@ -57,6 +136,20 @@ const pageTitle = computed(() => {
   }
   return titles[route.path] || 'NextKey'
 })
+
+const toggleSidebar = () => {
+  if (!isMobile.value) {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+}
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false
+}
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗?', '提示', {
@@ -73,44 +166,170 @@ const handleLogout = () => {
 <style scoped>
 .layout-container {
   height: 100vh;
+  overflow: hidden;
 }
 
-.el-aside {
-  background-color: #001529;
+/* ==================== 侧边栏 ==================== */
+.sidebar {
+  background: linear-gradient(180deg, #001529 0%, #000c17 100%);
   color: #fff;
+  transition: all var(--duration-normal) var(--ease-out);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
 }
 
+.sidebar.collapsed {
+  width: 64px !important;
+}
+
+/* Logo */
 .logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
-  background-color: #002140;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.el-menu {
+.logo:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* 菜单 */
+.sidebar-menu {
   border: none;
-  background-color: #001529;
+  background: transparent;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
 }
 
 :deep(.el-menu-item) {
   color: rgba(255, 255, 255, 0.65);
+  margin: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+  height: 48px;
+  line-height: 48px;
 }
 
-:deep(.el-menu-item:hover),
+:deep(.el-menu-item:hover) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateX(4px);
+}
+
 :deep(.el-menu-item.is-active) {
   color: #fff;
-  background-color: #1890ff !important;
+  background: linear-gradient(90deg, #1890ff 0%, #36cfc9 100%) !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  transform: translateX(0);
 }
 
-.el-header {
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
+:deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+}
+
+/* 侧边栏底部 */
+.sidebar-footer {
+  height: 56px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-footer:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.toggle-icon {
+  font-size: 18px;
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.toggle-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.toggle-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ==================== 主内容区 ==================== */
+.main-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #fff;
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 10;
+  height: 64px;
 }
 
 .header-content {
@@ -120,9 +339,111 @@ const handleLogout = () => {
   align-items: center;
 }
 
-.el-main {
-  background-color: #f0f2f5;
-  padding: 20px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mobile-menu-btn,
+.collapse-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out);
+  color: var(--color-text-secondary);
+}
+
+.mobile-menu-btn:hover,
+.collapse-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-content {
+  background: var(--color-bg-secondary);
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.main-content > * {
+  width: 100%;
+  max-width: 1400px;
+}
+
+/* ==================== 平板适配 ==================== */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .main-content {
+    padding: 20px;
+  }
+}
+
+/* ==================== 移动端适配 ==================== */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(0);
+    transition: transform var(--duration-normal) var(--ease-out);
+  }
+  
+  .sidebar.mobile-hidden {
+    transform: translateX(-100%);
+  }
+  
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+  
+  .header {
+    padding: 0 16px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  .main-content {
+    padding: 16px;
+  }
+}
+
+/* ==================== 过渡动画 ==================== */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
 

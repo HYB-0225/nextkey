@@ -118,13 +118,24 @@ admin:
   password: admin123
 ```
 
-## API文档
+## 文档
 
-详见 [API文档](docs/API.md)
+- **[客户端对接文档](docs/CLIENT.md)** - 完整的客户端接入指南，包含密钥配置、加密流程、API调用、常见问题等
+- **[API文档](docs/API.md)** - 详细的API接口说明
+- **[部署指南](docs/DEPLOY.md)** - 生产环境部署指南
+- **[客户端示例](docs/examples/)** - Python、Go等多语言示例代码
 
-## 客户端示例
+## 测试工具
 
-详见 [docs/examples](docs/examples/) 目录
+提供图形化测试工具，快速验证API对接：
+
+```bash
+cd tools
+pip install -r requirements.txt
+python gui-test-client.py
+```
+
+详见 [工具使用说明](tools/README.md)
 
 ## 开发
 

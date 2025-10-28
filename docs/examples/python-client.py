@@ -17,9 +17,10 @@ class NextKeyClient:
         self.session = requests.Session()
 
     def encrypt(self, plaintext):
-        cipher = AES.new(self.aes_key, AES.MODE_GCM)
+        nonce = secrets.token_bytes(12)  # Go的gcm.NonceSize()返回12
+        cipher = AES.new(self.aes_key, AES.MODE_GCM, nonce=nonce)
         ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
-        return base64.b64encode(cipher.nonce + tag + ciphertext).decode()
+        return base64.b64encode(nonce + ciphertext + tag).decode()
 
     def generate_nonce(self):
         return secrets.token_urlsafe(24)

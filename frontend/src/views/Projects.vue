@@ -1,6 +1,12 @@
 <template>
   <div class="page-container">
-    <el-card>
+    <ProjectStatsGrid
+      :total-count="projects.length"
+      :paid-count="paidProjectsCount"
+      :free-count="freeProjectsCount"
+    />
+    
+    <el-card class="main-card card-modern">
       <div class="header-actions">
         <el-button type="primary" @click="handleCreate">
           <el-icon><Plus /></el-icon>
@@ -14,109 +20,42 @@
         </el-button>
       </div>
       
-      <el-table :data="projects" style="width: 100%; margin-top: 20px;" v-loading="loading" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="项目名称" />
-        <el-table-column prop="uuid" label="项目UUID" width="280" />
-        <el-table-column prop="mode" label="模式" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.mode === 'paid' ? 'success' : 'info'">
-              {{ row.mode === 'paid' ? '付费' : '免费' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="version" label="版本" width="100" />
-        <el-table-column label="配置" width="180">
-          <template #default="{ row }">
-            <el-tag v-if="row.enable_hwid" size="small" style="margin-right: 5px">机器码</el-tag>
-            <el-tag v-if="row.enable_ip" size="small">IP验证</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="250" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" @click="handleViewCards(row)">卡密</el-button>
-            <el-button size="small" @click="handleViewVars(row)">变量</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <ProjectTable
+        :projects="projects"
+        :loading="loading"
+        @selection-change="handleSelectionChange"
+        @edit="handleEdit"
+        @view-cards="handleViewCards"
+        @view-vars="handleViewVars"
+        @delete="handleDelete"
+      />
     </el-card>
     
-    <el-dialog
-      v-model="dialogVisible"
+    <ProjectFormDialog
+      v-model:visible="dialogVisible"
       :title="dialogTitle"
-      width="600px"
-    >
-      <el-form :model="form" label-width="120px">
-        <el-form-item label="项目名称">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="模式">
-          <el-radio-group v-model="form.mode">
-            <el-radio label="free">免费</el-radio>
-            <el-radio label="paid">付费</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="版本号">
-          <el-input v-model="form.version" />
-        </el-form-item>
-        <el-form-item label="Token有效期">
-          <el-input v-model.number="form.token_expire" type="number">
-            <template #append>秒</template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="启用机器码">
-          <el-switch v-model="form.enable_hwid" />
-        </el-form-item>
-        <el-form-item label="启用IP验证">
-          <el-switch v-model="form.enable_ip" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" />
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确定</el-button>
-      </template>
-    </el-dialog>
+      :project-data="currentProject"
+      @save="handleSave"
+    />
     
-    <el-dialog v-model="batchCreateDialogVisible" title="批量创建项目" width="700px">
-      <el-alert type="info" :closable="false" style="margin-bottom: 15px;">
-        请输入JSON格式的项目数据,格式: [{"name": "项目名", "mode": "free", ...}, ...]
-      </el-alert>
-      <el-input
-        v-model="batchCreateData"
-        type="textarea"
-        :rows="12"
-        placeholder='[
-  {
-    "name": "项目1",
-    "mode": "free",
-    "version": "1.0.0",
-    "token_expire": 3600,
-    "enable_hwid": true,
-    "enable_ip": true,
-    "description": "描述"
-  }
-]'
-      />
-      
-      <template #footer>
-        <el-button @click="batchCreateDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleBatchCreateSave">确定创建</el-button>
-      </template>
-    </el-dialog>
+    <ProjectBatchCreateDialog
+      v-model:visible="batchCreateDialogVisible"
+      @save="handleBatchCreateSave"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { Plus } from '@element-plus/icons-vue'
 import { getProjects, createProject, updateProject, deleteProject, batchCreateProjects, batchDeleteProjects } from '@/api/project'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useTableSelection } from '@/composables/useTableSelection'
+import ProjectStatsGrid from '@/components/projects/ProjectStatsGrid.vue'
+import ProjectTable from '@/components/projects/ProjectTable.vue'
+import ProjectFormDialog from '@/components/projects/ProjectFormDialog.vue'
+import ProjectBatchCreateDialog from '@/components/projects/ProjectBatchCreateDialog.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -126,17 +65,16 @@ const batchCreateDialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
 const currentId = ref(null)
-const selectedProjects = ref([])
-const batchCreateData = ref('')
+const currentProject = ref(null)
 
-const form = ref({
-  name: '',
-  mode: 'free',
-  version: '1.0.0',
-  token_expire: 3600,
-  enable_hwid: true,
-  enable_ip: true,
-  description: ''
+const { selectedItems: selectedProjects, handleSelectionChange } = useTableSelection()
+
+const paidProjectsCount = computed(() => {
+  return projects.value.filter(p => p.mode === 'paid').length
+})
+
+const freeProjectsCount = computed(() => {
+  return projects.value.filter(p => p.mode === 'free').length
 })
 
 const loadProjects = async () => {
@@ -153,15 +91,7 @@ const loadProjects = async () => {
 const handleCreate = () => {
   isEdit.value = false
   dialogTitle.value = '创建项目'
-  form.value = {
-    name: '',
-    mode: 'free',
-    version: '1.0.0',
-    token_expire: 3600,
-    enable_hwid: true,
-    enable_ip: true,
-    description: ''
-  }
+  currentProject.value = null
   dialogVisible.value = true
 }
 
@@ -169,17 +99,17 @@ const handleEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑项目'
   currentId.value = row.id
-  form.value = { ...row }
+  currentProject.value = { ...row }
   dialogVisible.value = true
 }
 
-const handleSave = async () => {
+const handleSave = async (formData) => {
   try {
     if (isEdit.value) {
-      await updateProject(currentId.value, form.value)
+      await updateProject(currentId.value, formData)
       ElMessage.success('更新成功')
     } else {
-      await createProject(form.value)
+      await createProject(formData)
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
@@ -213,18 +143,13 @@ const handleViewVars = (row) => {
   router.push(`/cloudvars/${row.id}`)
 }
 
-const handleSelectionChange = (selection) => {
-  selectedProjects.value = selection
-}
-
 const handleBatchCreate = () => {
-  batchCreateData.value = ''
   batchCreateDialogVisible.value = true
 }
 
-const handleBatchCreateSave = async () => {
+const handleBatchCreateSave = async (jsonData) => {
   try {
-    const data = JSON.parse(batchCreateData.value)
+    const data = JSON.parse(jsonData)
     
     if (!Array.isArray(data)) {
       ElMessage.error('数据格式错误,必须是数组')
@@ -280,12 +205,58 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  max-width: 1400px;
+  width: 100%;
+}
+
+.main-card {
+  animation: slide-in-up var(--duration-normal) var(--ease-out);
 }
 
 .header-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+:deep(.el-card) {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+:deep(.el-card:hover) {
+  box-shadow: var(--shadow-md);
+}
+
+:deep(.el-button) {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+}
+
+:deep(.el-button:active) {
+  transform: translateY(0);
+}
+
+/* 平板适配 */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .header-actions {
+    gap: 10px;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .header-actions {
+    justify-content: flex-start;
+    gap: 8px;
+  }
 }
 </style>
-

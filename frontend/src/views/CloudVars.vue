@@ -17,64 +17,41 @@
         </el-button>
       </div>
       
-      <el-table :data="cloudVars" style="width: 100%; margin-top: 20px;" v-loading="loading" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="key" label="变量名" width="200" />
-        <el-table-column prop="value" label="值" />
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <CloudVarTable
+        :cloud-vars="cloudVars"
+        :loading="loading"
+        @selection-change="handleSelectionChange"
+        @edit="handleEdit"
+        @delete="handleDelete"
+      />
     </el-card>
     
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px">
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="变量名">
-          <el-input v-model="form.key" :disabled="isEdit" />
-        </el-form-item>
-        <el-form-item label="值">
-          <el-input v-model="form.value" type="textarea" :rows="5" />
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确定</el-button>
-      </template>
-    </el-dialog>
+    <CloudVarFormDialog
+      v-model:visible="dialogVisible"
+      :title="dialogTitle"
+      :is-edit="isEdit"
+      :var-data="currentVar"
+      @save="handleSave"
+    />
     
-    <el-dialog v-model="batchImportDialogVisible" title="批量导入变量" width="700px">
-      <el-alert type="info" :closable="false" style="margin-bottom: 15px;">
-        请输入JSON格式的变量数据,格式: [{"key": "变量名", "value": "值"}, ...]
-      </el-alert>
-      <el-input
-        v-model="batchImportData"
-        type="textarea"
-        :rows="12"
-        placeholder='[
-  {"key": "api_url", "value": "https://api.example.com"},
-  {"key": "app_name", "value": "MyApp"},
-  {"key": "version", "value": "1.0.0"}
-]'
-      />
-      
-      <template #footer>
-        <el-button @click="batchImportDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleBatchImportSave">确定导入</el-button>
-      </template>
-    </el-dialog>
+    <CloudVarBatchImportDialog
+      v-model:visible="batchImportDialogVisible"
+      @save="handleBatchImportSave"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { Plus } from '@element-plus/icons-vue'
 import { getProjects } from '@/api/project'
 import { getCloudVars, setCloudVar, deleteCloudVar, batchSetCloudVars, batchDeleteCloudVars } from '@/api/cloudvar'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useTableSelection } from '@/composables/useTableSelection'
+import CloudVarTable from '@/components/cloudvars/CloudVarTable.vue'
+import CloudVarFormDialog from '@/components/cloudvars/CloudVarFormDialog.vue'
+import CloudVarBatchImportDialog from '@/components/cloudvars/CloudVarBatchImportDialog.vue'
 
 const route = useRoute()
 const loading = ref(false)
@@ -85,10 +62,9 @@ const dialogVisible = ref(false)
 const batchImportDialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
-const selectedVars = ref([])
-const batchImportData = ref('')
+const currentVar = ref(null)
 
-const form = ref({ key: '', value: '' })
+const { selectedItems: selectedVars, handleSelectionChange } = useTableSelection()
 
 const loadProjects = async () => {
   try {
@@ -117,23 +93,23 @@ const loadCloudVars = async () => {
 const handleCreate = () => {
   isEdit.value = false
   dialogTitle.value = '添加变量'
-  form.value = { key: '', value: '' }
+  currentVar.value = null
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑变量'
-  form.value = { ...row }
+  currentVar.value = { ...row }
   dialogVisible.value = true
 }
 
-const handleSave = async () => {
+const handleSave = async (formData) => {
   try {
     await setCloudVar({
       project_id: selectedProjectId.value,
-      key: form.value.key,
-      value: form.value.value
+      key: formData.key,
+      value: formData.value
     })
     ElMessage.success('保存成功')
     dialogVisible.value = false
@@ -159,18 +135,13 @@ const handleDelete = (row) => {
   }).catch(() => {})
 }
 
-const handleSelectionChange = (selection) => {
-  selectedVars.value = selection
-}
-
 const handleBatchImport = () => {
-  batchImportData.value = ''
   batchImportDialogVisible.value = true
 }
 
-const handleBatchImportSave = async () => {
+const handleBatchImportSave = async (jsonData) => {
   try {
-    const data = JSON.parse(batchImportData.value)
+    const data = JSON.parse(jsonData)
     
     if (!Array.isArray(data)) {
       ElMessage.error('数据格式错误,必须是数组')
@@ -222,12 +193,73 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  max-width: 1400px;
+  width: 100%;
 }
 
 .header-actions {
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+:deep(.el-card) {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-normal) var(--ease-out);
+  animation: slide-in-up var(--duration-normal) var(--ease-out);
+}
+
+:deep(.el-card:hover) {
+  box-shadow: var(--shadow-md);
+}
+
+:deep(.el-select .el-input__wrapper) {
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: var(--color-primary);
+}
+
+:deep(.el-button) {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+}
+
+:deep(.el-button:active) {
+  transform: translateY(0);
+}
+
+/* 平板适配 */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .header-actions {
+    gap: 10px;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .header-actions {
+    margin-bottom: 16px;
+    gap: 8px;
+  }
+  
+  .header-actions :deep(.el-select) {
+    width: 100%;
+    order: -1;
+  }
+  
+  .header-actions :deep(.el-button) {
+    flex: 1;
+  }
 }
 </style>
-

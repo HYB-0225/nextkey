@@ -55,7 +55,11 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("卡密已过期")
 	}
 
-	if project.EnableHWID && req.HWID != "" {
+	// 验证设备码
+	if project.EnableHWID {
+		if req.HWID == "" {
+			return nil, errors.New("该项目需要提供设备码")
+		}
 		found := false
 		for _, hwid := range card.HWIDList {
 			if hwid == req.HWID {
@@ -72,7 +76,11 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		}
 	}
 
-	if project.EnableIP && req.IP != "" {
+	// 验证IP地址
+	if project.EnableIP {
+		if req.IP == "" {
+			return nil, errors.New("该项目需要提供IP地址")
+		}
 		found := false
 		for _, ip := range card.IPList {
 			if ip == req.IP {
