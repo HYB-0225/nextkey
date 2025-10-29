@@ -41,7 +41,8 @@ archives:
         format: zip
     files:
       - README.md
-      - config.yaml
+      - CHANGELOG.md
+      # config.yaml 包含敏感信息，不打包
 
 checksum:
   name_template: 'checksums.txt'
