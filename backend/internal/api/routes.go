@@ -24,10 +24,13 @@ func RegisterRoutes(r *gin.Engine) {
 	admin := r.Group("/admin")
 	{
 		admin.POST("/login", middleware.LoginRateLimitMiddleware(), AdminLogin)
+		admin.POST("/refresh", AdminRefreshToken)
 
 		adminAuth := admin.Group("")
 		adminAuth.Use(middleware.AdminAuthMiddleware())
 		{
+			adminAuth.POST("/logout", AdminLogout)
+
 			adminAuth.GET("/projects", ListProjects)
 			adminAuth.POST("/projects", CreateProject)
 			adminAuth.PUT("/projects/:id", UpdateProject)

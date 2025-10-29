@@ -51,6 +51,8 @@ func migrate() error {
 
 	return DB.AutoMigrate(
 		&models.Admin{},
+		&models.AdminToken{},
+		&models.AdminTokenBlacklist{},
 		&models.Project{},
 		&models.Card{},
 		&models.Token{},
@@ -199,7 +201,16 @@ func cleanExpiredNonces() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		cutoff := time.Now().Add(-10 * time.Minute)
-		DB.Where("created_at < ?", cutoff).Delete(&models.Nonce{})
+		now := time.Now()
+
+		// 清理过期的Nonce(10分钟前)
+		nonceCutoff := now.Add(-10 * time.Minute)
+		DB.Where("created_at < ?", nonceCutoff).Delete(&models.Nonce{})
+
+		// 清理过期的刷新令牌
+		DB.Where("expire_at < ?", now).Delete(&models.AdminToken{})
+
+		// 清理过期的JWT黑名单记录
+		DB.Where("expire_at < ?", now).Delete(&models.AdminTokenBlacklist{})
 	}
 }

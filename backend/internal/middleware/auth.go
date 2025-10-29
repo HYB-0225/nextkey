@@ -112,8 +112,33 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 提取JTI
+		jti, ok := claims["jti"]
+		if !ok {
+			utils.Error(c, 401, "Token缺少JTI")
+			c.Abort()
+			return
+		}
+
+		// 检查JTI是否在黑名单中
+		var blacklist models.AdminTokenBlacklist
+		if err := database.DB.Where("jti = ?", jti).First(&blacklist).Error; err == nil {
+			utils.Error(c, 401, "Token已被撤销")
+			c.Abort()
+			return
+		}
+
+		// 验证管理员是否仍然存在
+		var admin models.Admin
+		if err := database.DB.First(&admin, uint(adminID.(float64))).Error; err != nil {
+			utils.Error(c, 401, "管理员不存在")
+			c.Abort()
+			return
+		}
+
 		c.Set("admin_id", adminID)
 		c.Set("admin_token", tokenStr)
+		c.Set("jti", jti)
 		c.Next()
 	}
 }

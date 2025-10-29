@@ -63,3 +63,42 @@ func Heartbeat(c *gin.Context) {
 
 	utils.EncryptedSuccess(c, gin.H{"message": "心跳成功"})
 }
+
+func AdminRefreshToken(c *gin.Context) {
+	var req service.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, 400, "参数错误")
+		return
+	}
+
+	authSvc := service.NewAuthService()
+	resp, err := authSvc.RefreshToken(&req)
+	if err != nil {
+		utils.Error(c, 401, err.Error())
+		return
+	}
+
+	utils.Success(c, resp)
+}
+
+func AdminLogout(c *gin.Context) {
+	adminID, exists := c.Get("admin_id")
+	if !exists {
+		utils.Error(c, 401, "未认证")
+		return
+	}
+
+	jti, exists := c.Get("jti")
+	if !exists {
+		utils.Error(c, 401, "Token缺少必要信息")
+		return
+	}
+
+	authSvc := service.NewAuthService()
+	if err := authSvc.Logout(uint(adminID.(float64)), jti.(string)); err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "注销成功"})
+}

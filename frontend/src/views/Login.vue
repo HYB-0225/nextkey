@@ -101,7 +101,7 @@ const handleLogin = async () => {
     loading.value = true
     try {
       const data = await login(form)
-      authStore.setToken(data.token)
+      authStore.setTokens(data.access_token, data.refresh_token)
       ElMessage.success('登录成功')
       router.push('/')
     } catch (error) {

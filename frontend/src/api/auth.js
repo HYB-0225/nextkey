@@ -8,3 +8,18 @@ export function login(data) {
   })
 }
 
+export function refreshToken(data) {
+  return request({
+    url: '/admin/refresh',
+    method: 'post',
+    data
+  })
+}
+
+export function logout() {
+  return request({
+    url: '/admin/logout',
+    method: 'post'
+  })
+}
+

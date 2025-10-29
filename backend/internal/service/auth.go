@@ -157,7 +157,9 @@ type AdminLoginRequest struct {
 }
 
 type AdminLoginResponse struct {
-	Token string `json:"token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
 }
 
 var jwtSecret []byte
@@ -186,18 +188,45 @@ func (s *AuthService) AdminLogin(req *AdminLoginRequest) (*AdminLoginResponse, e
 		}
 	}
 
+	// 生成JTI和刷新令牌
+	jti := uuid.New().String()
+	refreshToken := uuid.New().String()
+
+	// 访问令牌有效期15分钟
+	accessTokenExpiry := time.Now().Add(15 * time.Minute)
+	// 刷新令牌有效期7天
+	refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour)
+
+	// 生成访问令牌(JWT)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"admin_id": admin.ID,
 		"username": admin.Username,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"jti":      jti,
+		"exp":      accessTokenExpiry.Unix(),
 	})
 
-	tokenString, err := token.SignedString(jwtSecret)
+	accessTokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AdminLoginResponse{Token: tokenString}, nil
+	// 保存刷新令牌到数据库
+	adminToken := &models.AdminToken{
+		AdminID:      admin.ID,
+		RefreshToken: refreshToken,
+		JTI:          jti,
+		ExpireAt:     refreshTokenExpiry,
+	}
+
+	if err := database.DB.Create(adminToken).Error; err != nil {
+		return nil, err
+	}
+
+	return &AdminLoginResponse{
+		AccessToken:  accessTokenString,
+		RefreshToken: refreshToken,
+		ExpiresIn:    900, // 15分钟 = 900秒
+	}, nil
 }
 
 // hashPasswordBcrypt 使用bcrypt哈希密码
@@ -224,4 +253,100 @@ func verifyPassword(hashedPassword, password string) bool {
 	}
 	// 向后兼容SHA256
 	return hashedPassword == hashPasswordSHA256(password)
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
+}
+
+func (s *AuthService) RefreshToken(req *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+	// 查找刷新令牌
+	var adminToken models.AdminToken
+	if err := database.DB.Where("refresh_token = ?", req.RefreshToken).Preload("Admin").First(&adminToken).Error; err != nil {
+		return nil, errors.New("无效的刷新令牌")
+	}
+
+	// 检查刷新令牌是否过期
+	if adminToken.IsExpired() {
+		database.DB.Delete(&adminToken)
+		return nil, errors.New("刷新令牌已过期")
+	}
+
+	// 验证管理员是否仍然存在
+	if adminToken.Admin == nil {
+		database.DB.Delete(&adminToken)
+		return nil, errors.New("管理员不存在")
+	}
+
+	// 生成新的JTI和刷新令牌(令牌轮换)
+	newJTI := uuid.New().String()
+	newRefreshToken := uuid.New().String()
+
+	// 访问令牌有效期15分钟
+	accessTokenExpiry := time.Now().Add(15 * time.Minute)
+	// 刷新令牌有效期7天
+	refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour)
+
+	// 生成新的访问令牌(JWT)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"admin_id": adminToken.AdminID,
+		"username": adminToken.Admin.Username,
+		"jti":      newJTI,
+		"exp":      accessTokenExpiry.Unix(),
+	})
+
+	accessTokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	// 删除旧的刷新令牌
+	database.DB.Delete(&adminToken)
+
+	// 保存新的刷新令牌到数据库
+	newAdminToken := &models.AdminToken{
+		AdminID:      adminToken.AdminID,
+		RefreshToken: newRefreshToken,
+		JTI:          newJTI,
+		ExpireAt:     refreshTokenExpiry,
+	}
+
+	if err := database.DB.Create(newAdminToken).Error; err != nil {
+		return nil, err
+	}
+
+	return &RefreshTokenResponse{
+		AccessToken:  accessTokenString,
+		RefreshToken: newRefreshToken,
+		ExpiresIn:    900, // 15分钟 = 900秒
+	}, nil
+}
+
+type LogoutRequest struct {
+	JTI string `json:"jti"`
+}
+
+func (s *AuthService) Logout(adminID uint, jti string) error {
+	// 删除该管理员的所有刷新令牌(全局注销)
+	if err := database.DB.Where("admin_id = ?", adminID).Delete(&models.AdminToken{}).Error; err != nil {
+		return err
+	}
+
+	// 将当前访问令牌的JTI加入黑名单(15分钟后自动清理)
+	blacklist := &models.AdminTokenBlacklist{
+		JTI:      jti,
+		ExpireAt: time.Now().Add(15 * time.Minute),
+	}
+
+	if err := database.DB.Create(blacklist).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
