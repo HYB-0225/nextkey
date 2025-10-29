@@ -44,3 +44,4 @@ build/
 .DS_Store
 Thumbs.db
 dist
+.cursor/
