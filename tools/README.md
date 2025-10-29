@@ -23,7 +23,7 @@
 ### 1. 克隆仓库（如果还没有）
 
 ```bash
-git clone https://github.com/nextkey/nextkey.git
+git clone https://github.com/HYB-0225/nextkey.git
 cd nextkey/tools
 ```
 
