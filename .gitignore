@@ -44,7 +44,6 @@ build/
 .DS_Store
 Thumbs.db
 dist
-<<<<<<< HEAD
 .cursor/
 
 # Rust
@@ -75,6 +74,3 @@ CTestTestfile.cmake
 _deps/
 *.cmake
 !CMakeLists.txt
-=======
-.cursor/
->>>>>>> be59b80a0212a91c2e7651b7353206fbe40f41ef

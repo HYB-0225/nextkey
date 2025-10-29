@@ -452,9 +452,116 @@ def handle_api_call(func):
 
 ## 多语言示例
 
+### C++ 客户端 SDK
+
+NextKey 提供基于 Rust FFI 的现代 C++ 客户端封装。
+
+**特性**:
+- ✅ 现代 C++17 风格
+- ✅ RAII 自动资源管理
+- ✅ 异常处理机制
+- ✅ 异步心跳支持
+- ✅ 跨平台（Windows、Linux、Android）
+
+**快速开始**:
+```cpp
+#include "NextKeyClient.hpp"
+using namespace nextkey;
+
+int main() {
+    try {
+        auto client = std::make_unique<NextKeyClient>(
+            "http://localhost:8080",
+            "project-uuid",
+            "aes-key"
+        );
+        
+        auto result = client->login("card-key", "device-001");
+        std::cout << "Token: " << result.token << "\n";
+        
+        client->heartbeat();
+        
+        auto value = client->getCloudVar("notice");
+        std::cout << "Notice: " << value << "\n";
+        
+    } catch (const NextKeyException& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
+```
+
+**完整文档**: [demo/cpp-client/README.md](../demo/cpp-client/README.md)
+
+**编译与使用**:
+```bash
+# 复制 Rust 静态库
+cp ../rust-sdk/target/release/libnextkey_sdk.a demo/cpp-client/lib/
+
+# CMake 编译
+cd demo/cpp-client
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
+```
+
+### Rust SDK
+
+原生 Rust 实现，支持编译为静态库、动态库或独立可执行文件。
+
+**特性**:
+- ✅ 零成本抽象
+- ✅ 内存安全
+- ✅ 跨平台编译（包括 Android ARM64）
+- ✅ C FFI 支持（可供 C/C++ 调用）
+
+**使用方式**:
+```rust
+use nextkey_sdk::client::NextKeyClient;
+
+fn main() -> anyhow::Result<()> {
+    let mut client = NextKeyClient::new(
+        "http://localhost:8080",
+        "project-uuid",
+        "aes-key"
+    )?;
+    
+    let result = client.login("card-key", Some("hwid"), None)?;
+    println!("Token: {}", result.token);
+    
+    client.heartbeat()?;
+    
+    let value = client.get_cloud_var("notice")?;
+    println!("Notice: {}", value);
+    
+    Ok(())
+}
+```
+
+**构建**:
+```bash
+cd demo/rust-sdk
+
+# 构建为静态库（供 C++ 使用）
+cargo build --release
+
+# 构建为可执行文件
+cargo build --release --bin nextkey-cli
+
+# 交叉编译 Android ARM64
+cargo build --release --target aarch64-linux-android
+```
+
+**Cargo.toml 集成**:
+```toml
+[dependencies]
+nextkey-sdk = { path = "../demo/rust-sdk" }
+```
+
 ### Python客户端
 
-完整示例: [examples/python-client.py](examples/python-client.py)
+完整示例: [demo/tools/gui-test-client.py](../demo/tools/gui-test-client.py)
 
 **核心代码**:
 ```python
@@ -470,27 +577,11 @@ class NextKeyClient:
         self.token = None
     
     def login(self, card_key, hwid=""):
-        # 详见示例文件
+        # 详见完整示例文件
         pass
 ```
 
-### Go客户端
-
-完整示例: [examples/go-client.go](examples/go-client.go)
-
-**核心代码**:
-```go
-type Client struct {
-    ServerURL   string
-    ProjectUUID string
-    AESKey      []byte
-    Token       string
-}
-
-func (c *Client) Login(cardKey, hwid string) error {
-    // 详见示例文件
-}
-```
+完整文档: [demo/tools/README.md](../demo/tools/README.md)
 
 ### 其他语言参考
 
@@ -646,6 +737,7 @@ client.login(card_key, hwid=hwid)
 # 未激活的卡密首次登录会自动激活
 result = client.login("NEWCARD-123456")
 # activated: true
+# frozen: false
 # expire_at: 当前时间 + duration
 ```
 
@@ -658,6 +750,19 @@ expire_time = datetime.fromisoformat(expire_at.replace('Z', '+00:00'))
 
 if datetime.now() > expire_time:
     print("卡密已过期")
+```
+
+**卡密冻结**:
+- 管理员可以在后台冻结卡密（`frozen: true`）
+- 冻结后的卡密无法登录，会返回 401 错误
+- 已登录的会话不受影响（直到 Token 过期）
+- 解冻后可正常使用
+
+**状态检查**:
+```python
+result = client.login("card-key")
+if result['card']['frozen']:
+    print("警告：此卡密已被冻结")
 ```
 
 **续期方式**:
@@ -750,23 +855,23 @@ def load_token():
 我们提供了图形化测试工具，帮助您快速验证对接：
 
 ```bash
-cd tools
+cd demo/tools
 pip install -r requirements.txt
 python gui-test-client.py
 ```
 
-详见: [tools/README.md](../tools/README.md)
+详见: [demo/tools/README.md](../demo/tools/README.md)
 
 ---
 
 ## 技术支持
 
 - **文档**: [API文档](API.md) | [部署指南](DEPLOY.md)
-- **示例代码**: [examples/](examples/)
+- **SDK**: [C++ SDK](../demo/cpp-client/README.md) | [Rust SDK](../demo/rust-sdk/) | [Python 工具](../demo/tools/README.md)
 - **问题反馈**: [GitHub Issues](https://github.com/HYB-0225/nextkey/issues)
 
 ---
 
-**更新时间**: 2024-01-01  
-**文档版本**: 1.0.0
+**更新时间**: 2025-10-30  
+**文档版本**: 1.0.1
 

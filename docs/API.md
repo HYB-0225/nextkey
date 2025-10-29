@@ -104,12 +104,15 @@
       "id": 1,
       "card_key": "xxx",
       "activated": true,
+      "frozen": false,
       "duration": 2592000,
       "custom_data": "专属信息"
     }
   }
 }
 ```
+
+**注意**: 如果卡密已被冻结（`frozen: true`），登录将失败并返回错误信息。
 
 ### 2. 心跳验证
 
@@ -282,13 +285,73 @@
 }
 ```
 
+#### 按 UUID 获取项目
+
+**接口**: `GET /admin/projects/:uuid`
+
+**响应数据**:
+```json
+{
+  "id": 1,
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "项目名称",
+  "mode": "free",
+  "enable_hwid": true,
+  "enable_ip": true,
+  "version": "1.0.0",
+  "update_url": "",
+  "token_expire": 3600,
+  "description": "描述"
+}
+```
+
 #### 更新项目
 
 **接口**: `PUT /admin/projects/:id`
 
+**请求参数**:
+```json
+{
+  "name": "新项目名称",
+  "version": "1.0.1",
+  "description": "更新描述"
+}
+```
+
 #### 删除项目
 
 **接口**: `DELETE /admin/projects/:id`
+
+#### 批量创建项目
+
+**接口**: `POST /admin/projects/batch`
+
+**请求参数**:
+```json
+{
+  "projects": [
+    {
+      "name": "项目1",
+      "mode": "free"
+    },
+    {
+      "name": "项目2",
+      "mode": "card"
+    }
+  ]
+}
+```
+
+#### 批量删除项目
+
+**接口**: `DELETE /admin/projects/batch`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
 
 ### 3. 卡密管理
 
@@ -303,6 +366,7 @@
 - `keyword`: 卡密关键词（模糊搜索）
 - `card_type`: 卡密类型
 - `activated`: 激活状态（"true"/"false"）
+- `frozen`: 冻结状态（"true"/"false"）
 - `note`: 备注（模糊搜索）
 - `custom_data`: 专属信息（模糊搜索）
 - `hwid`: 设备码（模糊搜索）
@@ -343,9 +407,126 @@
 }
 ```
 
+#### 获取单个卡密
+
+**接口**: `GET /admin/cards/:id`
+
+**响应数据**:
+```json
+{
+  "id": 1,
+  "card_key": "TEST-123456",
+  "project_id": 1,
+  "activated": true,
+  "frozen": false,
+  "duration": 2592000,
+  "expire_at": "2024-01-01T00:00:00Z",
+  "note": "测试卡密",
+  "card_type": "normal",
+  "custom_data": "{}",
+  "hwid_list": ["device-001"],
+  "ip_list": ["192.168.1.1"],
+  "max_hwid": -1,
+  "max_ip": -1,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+#### 更新卡密
+
+**接口**: `PUT /admin/cards/:id`
+
+**请求参数**:
+```json
+{
+  "note": "更新后的备注",
+  "duration": 3600,
+  "card_type": "vip",
+  "max_hwid": 1,
+  "max_ip": 1,
+  "custom_data": "自定义数据",
+  "hwid_list": ["device-001", "device-002"],
+  "ip_list": ["192.168.1.1"]
+}
+```
+
 #### 删除卡密
 
 **接口**: `DELETE /admin/cards/:id`
+
+#### 冻结卡密
+
+**接口**: `PUT /admin/cards/:id/freeze`
+
+**说明**: 冻结后的卡密无法登录，已登录的会话不受影响
+
+**响应数据**:
+```json
+{
+  "message": "冻结成功"
+}
+```
+
+#### 解冻卡密
+
+**接口**: `PUT /admin/cards/:id/unfreeze`
+
+**响应数据**:
+```json
+{
+  "message": "解冻成功"
+}
+```
+
+#### 批量更新卡密
+
+**接口**: `PUT /admin/cards/batch`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3],
+  "data": {
+    "duration": 3600,
+    "card_type": "vip",
+    "note": "批量更新"
+  }
+}
+```
+
+#### 批量删除卡密
+
+**接口**: `DELETE /admin/cards/batch`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
+
+#### 批量冻结卡密
+
+**接口**: `PUT /admin/cards/batch/freeze`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
+
+#### 批量解冻卡密
+
+**接口**: `PUT /admin/cards/batch/unfreeze`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
 
 ### 4. 云变量管理
 
@@ -372,6 +553,38 @@
 #### 删除云变量
 
 **接口**: `DELETE /admin/cloud-vars/:id`
+
+#### 批量设置云变量
+
+**接口**: `POST /admin/cloud-vars/batch`
+
+**请求参数**:
+```json
+{
+  "project_id": 1,
+  "vars": [
+    {
+      "key": "notice",
+      "value": "系统维护通知"
+    },
+    {
+      "key": "feature_enabled",
+      "value": "true"
+    }
+  ]
+}
+```
+
+#### 批量删除云变量
+
+**接口**: `DELETE /admin/cloud-vars/batch`
+
+**请求参数**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
 
 ## 错误码
 

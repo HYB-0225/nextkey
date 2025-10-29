@@ -4,13 +4,15 @@
 
 ## 特性
 
-- 卡密系统 - 支持自定义生成、设备码/IP验证、批量操作
-- 高级搜索 - 多维度搜索卡密（关键词、类型、状态、设备码、IP等）
+- 卡密系统 - 支持自定义生成、设备码/IP验证、冻结/解冻、批量操作
+- 高级搜索 - 多维度搜索卡密（关键词、类型、状态、冻结状态、设备码、IP等）
 - 批量导出 - 支持JSON/TXT/CSV三种格式导出卡密
+- 批量管理 - 批量创建、更新、删除、冻结/解冻卡密、项目、云变量
 - 云变量 - 项目级别的云端变量存储
 - 版本控制 - 客户端版本管理和更新控制
 - 安全通信 - AES-256-GCM加密，防重放攻击
 - 项目隔离 - 多项目管理，每个项目独立UUID
+- 多语言SDK - 提供 C++、Rust 客户端 SDK
 - 开箱即用 - 单一二进制文件，自动初始化
 - 现代化UI - 响应式设计，支持桌面端和移动端
 
@@ -55,7 +57,7 @@ chmod +x nextkey
 
 ### 环境要求
 
-- Go 1.21+
+- Go 1.24+
 - Node.js 18+
 - npm/pnpm
 
@@ -139,19 +141,24 @@ admin:
 - **[客户端对接文档](docs/CLIENT.md)** - 完整的客户端接入指南，包含密钥配置、加密流程、API调用、常见问题等
 - **[API文档](docs/API.md)** - 详细的API接口说明
 - **[部署指南](docs/DEPLOY.md)** - 生产环境部署指南
-- **[客户端示例](demo/)** - 示例代码
+
+## 客户端 SDK
+
+- **[C++ Client SDK](demo/cpp-client/README.md)** - 基于 Rust FFI 的现代 C++ 客户端封装，支持 RAII、异常处理、自动心跳
+- **[Rust SDK](demo/rust-sdk/)** - Rust 原生 SDK，支持跨平台编译（Windows、Linux、Android）
+- **[Python 示例](demo/tools/)** - Python 测试工具和示例代码
 
 ## 测试工具
 
 提供图形化测试工具，快速验证API对接：
 
 ```bash
-cd tools
+cd demo/tools
 pip install -r requirements.txt
 python gui-test-client.py
 ```
 
-详见 [工具使用说明](tools/README.md)
+详见 [工具使用说明](demo/tools/README.md)
 
 ## 开发
 

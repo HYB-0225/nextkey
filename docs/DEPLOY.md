@@ -39,7 +39,7 @@ database:
   path: ./nextkey.db      # 数据库路径
 
 security:
-  aes_key: "自动生成"     # AES加密密钥
+  aes_key: "自动生成"     # AES加密密钥（64字符十六进制）
   jwt_secret: "自动生成"  # JWT密钥
   token_expire: 3600      # Token有效期(秒)
   replay_window: 300      # 防重放时间窗口(秒)
@@ -48,6 +48,34 @@ admin:
   username: admin
   password: admin123      # 首次运行后请修改
 ```
+
+## 数据库模型
+
+### 卡密表（Card）
+
+主要字段说明：
+
+- `id`: 主键
+- `card_key`: 卡密（唯一索引）
+- `project_id`: 所属项目ID
+- `activated`: 激活状态
+- `frozen`: **冻结状态**（新增字段，冻结后无法登录）
+- `duration`: 有效时长（秒）
+- `expire_at`: 过期时间
+- `note`: 备注
+- `card_type`: 卡密类型
+- `custom_data`: 专属信息（JSON 格式）
+- `hwid_list`: 设备码列表（JSON 数组）
+- `ip_list`: IP 列表（JSON 数组）
+- `max_hwid`: 最大设备数限制（-1 表示无限制）
+- `max_ip`: 最大 IP 数限制（-1 表示无限制）
+
+### 卡密冻结功能使用场景
+
+1. **违规处理**: 发现用户违规时临时冻结账号
+2. **安全控制**: 可疑活动时暂停访问
+3. **欠费管理**: 欠费用户冻结，续费后解冻
+4. **批量管理**: 批量冻结/解冻多个卡密
 
 ## 生产环境部署
 
@@ -157,7 +185,31 @@ sudo journalctl -u nextkey -f
 
 ### 健康检查
 
-可以通过访问管理后台检查服务状态，或添加健康检查端点。
+**方法1：访问管理后台**
+```bash
+curl http://localhost:8080/
+```
+如果返回前端页面，说明服务正常运行。
+
+**方法2：自定义健康检查脚本**
+```bash
+#!/bin/bash
+# health_check.sh
+response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
+if [ $response -eq 200 ]; then
+    echo "Service is healthy"
+    exit 0
+else
+    echo "Service is down (HTTP $response)"
+    exit 1
+fi
+```
+
+**方法3：使用进程监控**
+```bash
+# 检查进程是否存在
+ps aux | grep nextkey | grep -v grep
+```
 
 ## 故障排查
 
@@ -188,9 +240,25 @@ SQLite 在高并发时可能出现锁定，考虑:
 ## 安全建议
 
 1. **修改默认密码**: 首次登录后立即修改管理员密码
-2. **防火墙**: 仅开放必要端口
+2. **防火墙**: 仅开放必要端口（默认 8080）
 3. **HTTPS**: 生产环境必须使用 HTTPS
 4. **定期更新**: 及时更新到最新版本
-5. **备份**: 定期备份数据库
-6. **密钥管理**: 妥善保管 AES 密钥和 JWT 密钥
+5. **备份**: 定期备份数据库和配置文件
+6. **密钥管理**: 妥善保管 AES 密钥和 JWT 密钥，不要提交到代码仓库
+7. **卡密冻结**: 发现异常行为时及时冻结相关卡密
+8. **日志审计**: 定期检查日志，发现可疑活动
+
+## 系统要求
+
+**最低配置**:
+- CPU: 1核
+- 内存: 512MB
+- 磁盘: 1GB
+- Go 版本: 1.24+
+
+**推荐配置**（并发 100+ 用户）:
+- CPU: 2核+
+- 内存: 2GB+
+- 磁盘: 10GB+（根据数据量调整）
+- SSD 存储（提升 SQLite 性能）
 
