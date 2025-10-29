@@ -1,0 +1,33 @@
+[package]
+name = "nextkey-sdk"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "nextkey_sdk"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "nextkey-cli"
+path = "src/bin/main.rs"
+
+[dependencies]
+aes-gcm = "0.10"
+base64 = "0.22"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
+chrono = "0.4"
+rand = "0.8"
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+
+[build-dependencies]
+cbindgen = "0.27"
+
+[profile.release]
+opt-level = "z"        # 优化大小
+lto = true             # 链接时优化
+codegen-units = 1      # 单个代码生成单元
+strip = true           # 删除符号
+panic = "abort"        # panic 时直接 abort，减少展开代码

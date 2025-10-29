@@ -45,3 +45,32 @@ build/
 Thumbs.db
 dist
 .cursor/
+
+# Rust
+target/
+Cargo.lock
+*.rlib
+*.rmeta
+
+# C/C++
+*.o
+*.a
+*.lib
+*.obj
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+*.cmake
+!CMakeLists.txt
