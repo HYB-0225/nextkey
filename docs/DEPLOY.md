@@ -4,7 +4,7 @@
 
 ### 1. 下载预构建版本
 
-从 [Releases](https://github.com/nextkey/nextkey/releases) 下载对应平台的二进制文件。
+从 [Releases](https://github.com/HYB-0225/nextkey/releases) 下载对应平台的二进制文件。
 
 ### 2. 首次运行
 

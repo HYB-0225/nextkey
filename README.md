@@ -4,21 +4,21 @@
 
 ## 特性
 
-- 🔐 卡密系统 - 支持自定义生成、设备码/IP验证、批量操作
-- 🔍 高级搜索 - 多维度搜索卡密（关键词、类型、状态、设备码、IP等）
-- 📤 批量导出 - 支持JSON/TXT/CSV三种格式导出卡密
-- ☁️ 云变量 - 项目级别的云端变量存储
-- 📦 版本控制 - 客户端版本管理和更新控制
-- 🔒 安全通信 - AES-256-GCM加密，防重放攻击
-- 🎯 项目隔离 - 多项目管理，每个项目独立UUID
-- 🚀 开箱即用 - 单一二进制文件，自动初始化
-- 💎 现代化UI - 响应式设计，支持桌面端和移动端
+- 卡密系统 - 支持自定义生成、设备码/IP验证、批量操作
+- 高级搜索 - 多维度搜索卡密（关键词、类型、状态、设备码、IP等）
+- 批量导出 - 支持JSON/TXT/CSV三种格式导出卡密
+- 云变量 - 项目级别的云端变量存储
+- 版本控制 - 客户端版本管理和更新控制
+- 安全通信 - AES-256-GCM加密，防重放攻击
+- 项目隔离 - 多项目管理，每个项目独立UUID
+- 开箱即用 - 单一二进制文件，自动初始化
+- 现代化UI - 响应式设计，支持桌面端和移动端
 
 ## 快速开始
 
 ### 下载预构建版本
 
-从 [Releases](https://github.com/nextkey/nextkey/releases) 下载对应平台的二进制文件。
+从 [Releases](https://github.com/HYB-0225/nextkey/releases) 下载对应平台的二进制文件。
 
 ### 运行
 
@@ -63,7 +63,7 @@ chmod +x nextkey
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/nextkey/nextkey.git
+git clone https://github.com/HYB-0225/nextkey.git
 cd nextkey
 
 # 2. 使用构建脚本(推荐)
