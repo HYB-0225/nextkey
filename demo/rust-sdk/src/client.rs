@@ -18,6 +18,19 @@ pub struct EncryptedResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct InternalRequest<T> {
+    nonce: String,
+    timestamp: u64,
+    data: T,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct InternalResponse<T> {
+    timestamp: u64,
+    data: T,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiResponse<T> {
     pub code: i32,
     pub message: String,
@@ -115,15 +128,23 @@ impl NextKeyClient {
     ) -> Result<ApiResponse<R>> {
         // 生成并记住请求nonce
         let request_nonce = Crypto::generate_nonce();
+        let request_timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_secs();
+
+        // 包装内层数据，嵌入nonce和timestamp
+        let internal_data = InternalRequest {
+            nonce: request_nonce.clone(),
+            timestamp: request_timestamp,
+            data,
+        };
 
         // 加密请求数据
-        let json_data = serde_json::to_string(data)?;
+        let json_data = serde_json::to_string(&internal_data)?;
         let encrypted_data = self.crypto.encrypt(&json_data)?;
 
         let req_body = EncryptedRequest {
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)?
-                .as_secs(),
+            timestamp: request_timestamp,
             nonce: request_nonce.clone(),
             data: encrypted_data,
         };
@@ -160,9 +181,23 @@ impl NextKeyClient {
 
         // 解密响应数据
         let decrypted = self.crypto.decrypt(&resp_json.data)?;
-        let result: ApiResponse<R> = serde_json::from_str(&decrypted)?;
+        let internal_response: InternalResponse<ApiResponse<R>> = serde_json::from_str(&decrypted)?;
 
-        Ok(result)
+        // 验证服务器时间戳
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_secs();
+        let time_diff = if current_time > internal_response.timestamp {
+            current_time - internal_response.timestamp
+        } else {
+            internal_response.timestamp - current_time
+        };
+
+        if time_diff > 300 {
+            anyhow::bail!("响应时间戳异常，可能遭受离线攻击！时间差: {}秒", time_diff);
+        }
+
+        Ok(internal_response.data)
     }
 
     /// 登录

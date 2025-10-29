@@ -77,12 +77,20 @@ class NextKeyClient:
         """发送加密请求并验证响应Nonce"""
         # 生成并记住请求nonce
         request_nonce = self.generate_nonce()
+        request_timestamp = int(time.time())
         
-        json_data = json.dumps(data)
+        # 包装内层数据，嵌入nonce和timestamp
+        internal_data = {
+            "nonce": request_nonce,
+            "timestamp": request_timestamp,
+            "data": data
+        }
+        
+        json_data = json.dumps(internal_data)
         encrypted_data = self.encrypt(json_data)
         
         req_body = {
-            "timestamp": int(time.time()),
+            "timestamp": request_timestamp,
             "nonce": request_nonce,
             "data": encrypted_data
         }
@@ -101,7 +109,17 @@ class NextKeyClient:
         
         # 解密响应数据
         decrypted = self.decrypt(resp_json["data"])
-        result = json.loads(decrypted)
+        internal_response = json.loads(decrypted)
+        
+        # 验证服务器时间戳
+        server_timestamp = internal_response.get("timestamp", 0)
+        current_time = int(time.time())
+        time_diff = abs(current_time - server_timestamp)
+        if time_diff > 300:
+            raise ValueError(f"响应时间戳异常，可能遭受离线攻击！时间差: {time_diff}秒")
+        
+        # 提取实际业务数据
+        result = internal_response.get("data", {})
         
         # 返回解密后的结果、请求体和原始加密响应
         return result, req_body, resp_json

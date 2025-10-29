@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/crypto"
@@ -16,6 +17,11 @@ type Response struct {
 type EncryptedResponse struct {
 	Nonce string `json:"nonce"`
 	Data  string `json:"data"`
+}
+
+type InternalResponse struct {
+	Timestamp int64       `json:"timestamp"`
+	Data      interface{} `json:"data"`
 }
 
 func Success(c *gin.Context, data interface{}) {
@@ -56,7 +62,13 @@ func EncryptedSuccess(c *gin.Context, data interface{}) {
 		Data:    data,
 	}
 
-	jsonData, err := json.Marshal(resp)
+	// 包装内层数据，嵌入服务器时间戳
+	internalResp := InternalResponse{
+		Timestamp: time.Now().Unix(),
+		Data:      resp,
+	}
+
+	jsonData, err := json.Marshal(internalResp)
 	if err != nil {
 		Error(c, 500, "序列化失败")
 		return
@@ -83,7 +95,13 @@ func EncryptedError(c *gin.Context, code int, message string) {
 		Message: message,
 	}
 
-	jsonData, err := json.Marshal(resp)
+	// 包装内层数据，嵌入服务器时间戳
+	internalResp := InternalResponse{
+		Timestamp: time.Now().Unix(),
+		Data:      resp,
+	}
+
+	jsonData, err := json.Marshal(internalResp)
 	if err != nil {
 		Error(c, 500, "序列化失败")
 		return

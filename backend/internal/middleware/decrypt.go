@@ -19,6 +19,12 @@ type EncryptedRequest struct {
 	Data      string `json:"data"`
 }
 
+type InternalRequest struct {
+	Nonce     string          `json:"nonce"`
+	Timestamp int64           `json:"timestamp"`
+	Data      json.RawMessage `json:"data"`
+}
+
 func DecryptMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := io.ReadAll(c.Request.Body)
@@ -59,7 +65,29 @@ func DecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("decrypted_data", plaintext)
+		// 解密后验证内层nonce和timestamp
+		var internalReq InternalRequest
+		if err := json.Unmarshal([]byte(plaintext), &internalReq); err != nil {
+			utils.Error(c, 400, "内部数据格式错误")
+			c.Abort()
+			return
+		}
+
+		// 验证内外层nonce一致性
+		if internalReq.Nonce != encReq.Nonce {
+			utils.Error(c, 401, "Nonce验证失败")
+			c.Abort()
+			return
+		}
+
+		// 验证内外层timestamp一致性
+		if internalReq.Timestamp != encReq.Timestamp {
+			utils.Error(c, 401, "Timestamp验证失败")
+			c.Abort()
+			return
+		}
+
+		c.Set("decrypted_data", string(internalReq.Data))
 		c.Set("request_nonce", encReq.Nonce)
 		c.Next()
 	}
