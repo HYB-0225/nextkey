@@ -49,9 +49,31 @@ checksum:
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 
+release:
+  github:
+    owner: HYB-0225
+    name: nextkey
+  name_template: "v{{.Version}}"
+  draft: false
+  prerelease: auto
+
 changelog:
+  use: github
   sort: asc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+      - '^chore:'
+  groups:
+    - title: '✨ 新功能'
+      regexp: '^feat:'
+      order: 0
+    - title: '🐛 Bug修复'
+      regexp: '^fix:'
+      order: 1
+    - title: '📝 文档'
+      regexp: '^docs:'
+      order: 2
+    - title: '🔧 其他'
+      order: 999
