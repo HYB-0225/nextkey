@@ -14,6 +14,9 @@ vendor/
 *.db-shm
 *.db-wal
 
+# Config (contains sensitive information)
+config.yaml
+
 # IDE
 .vscode/
 .idea/
