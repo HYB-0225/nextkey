@@ -184,7 +184,7 @@
 **请求参数**:
 ```json
 {
-  "custom_data": "JSON字符串"
+  "custom_data": "任意字符串（可以是 JSON 格式，也可以是纯文本）"
 }
 ```
 
@@ -561,13 +561,14 @@
 **请求参数**:
 ```json
 {
-  "project_id": 1,
-  "vars": [
+  "data": [
     {
+      "project_id": 1,
       "key": "notice",
       "value": "系统维护通知"
     },
     {
+      "project_id": 1,
       "key": "feature_enabled",
       "value": "true"
     }
