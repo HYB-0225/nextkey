@@ -4,10 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/nextkey/nextkey/backend/internal/models"
 	"github.com/nextkey/nextkey/backend/pkg/config"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -129,7 +131,7 @@ func migrateTokenCardID() error {
 }
 
 func syncAdminFromConfig(cfg *config.Config) error {
-	hashedPassword := hashPassword(cfg.Admin.Password)
+	hashedPassword := hashPasswordBcrypt(cfg.Admin.Password)
 
 	// 查找现有管理员账号
 	var admin models.Admin
@@ -150,17 +152,44 @@ func syncAdminFromConfig(cfg *config.Config) error {
 	} else {
 		// 已存在管理员账号，同步更新为配置文件中的值
 		admin.Username = cfg.Admin.Username
-		admin.Password = hashedPassword
+
+		// 只在密码格式不同时更新密码
+		needsUpdate := false
+		if strings.HasPrefix(admin.Password, "$2a$") || strings.HasPrefix(admin.Password, "$2b$") {
+			// 当前是bcrypt,验证是否与配置密码匹配
+			if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(cfg.Admin.Password)); err != nil {
+				needsUpdate = true
+			}
+		} else {
+			// 当前是SHA256,需要升级
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			admin.Password = hashedPassword
+			log.Printf("已同步管理员账号: %s (密码已更新为配置文件中的值)", cfg.Admin.Username)
+		} else {
+			log.Printf("已同步管理员账号: %s", cfg.Admin.Username)
+		}
+
 		if err := DB.Save(&admin).Error; err != nil {
 			return err
 		}
-		log.Printf("已同步管理员账号: %s (密码已更新为配置文件中的值)", cfg.Admin.Username)
 	}
 
 	return nil
 }
 
-func hashPassword(password string) string {
+func hashPasswordBcrypt(password string) string {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("bcrypt哈希失败,回退到SHA256: %v", err)
+		return hashPasswordSHA256(password)
+	}
+	return string(hash)
+}
+
+func hashPasswordSHA256(password string) string {
 	hash := sha256.Sum256([]byte(password))
 	return hex.EncodeToString(hash[:])
 }

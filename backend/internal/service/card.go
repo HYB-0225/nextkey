@@ -2,12 +2,21 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/models"
 	"github.com/nextkey/nextkey/backend/pkg/utils"
 )
+
+// escapeLikeString 转义LIKE查询中的特殊字符
+func escapeLikeString(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
+}
 
 type CardService struct{}
 
@@ -127,7 +136,9 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int
 	}
 
 	if filter.Keyword != "" {
-		query = query.Where("card_key LIKE ?", "%"+filter.Keyword+"%")
+		// 转义LIKE特殊字符以防止SQL注入
+		escapedKeyword := escapeLikeString(filter.Keyword)
+		query = query.Where("card_key LIKE ? ESCAPE '\\'", "%"+escapedKeyword+"%")
 	}
 
 	if filter.CardType != "" {
@@ -135,19 +146,23 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int
 	}
 
 	if filter.Note != "" {
-		query = query.Where("note LIKE ?", "%"+filter.Note+"%")
+		escapedNote := escapeLikeString(filter.Note)
+		query = query.Where("note LIKE ? ESCAPE '\\'", "%"+escapedNote+"%")
 	}
 
 	if filter.CustomData != "" {
-		query = query.Where("custom_data LIKE ?", "%"+filter.CustomData+"%")
+		escapedCustomData := escapeLikeString(filter.CustomData)
+		query = query.Where("custom_data LIKE ? ESCAPE '\\'", "%"+escapedCustomData+"%")
 	}
 
 	if filter.HWID != "" {
-		query = query.Where("hwid_list LIKE ?", "%"+filter.HWID+"%")
+		escapedHWID := escapeLikeString(filter.HWID)
+		query = query.Where("hwid_list LIKE ? ESCAPE '\\'", "%"+escapedHWID+"%")
 	}
 
 	if filter.IP != "" {
-		query = query.Where("ip_list LIKE ?", "%"+filter.IP+"%")
+		escapedIP := escapeLikeString(filter.IP)
+		query = query.Where("ip_list LIKE ? ESCAPE '\\'", "%"+escapedIP+"%")
 	}
 
 	if filter.Activated == "true" {

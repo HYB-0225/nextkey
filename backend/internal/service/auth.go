@@ -4,12 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct{}
@@ -34,7 +36,7 @@ type LoginResponse struct {
 func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 	var project models.Project
 	if err := database.DB.Where("uuid = ?", req.ProjectUUID).First(&project).Error; err != nil {
-		return nil, errors.New("项目不存在")
+		return nil, errors.New("认证失败")
 	}
 
 	// 免费模式: 跳过所有验证,直接返回Token
@@ -63,7 +65,7 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 	// 付费模式: 完整验证逻辑
 	var card models.Card
 	if err := database.DB.Where("card_key = ? AND project_id = ?", req.CardKey, project.ID).First(&card).Error; err != nil {
-		return nil, errors.New("卡密不存在")
+		return nil, errors.New("认证失败")
 	}
 
 	if !card.Activated {
@@ -78,17 +80,17 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 	}
 
 	if card.IsExpired() {
-		return nil, errors.New("卡密已过期")
+		return nil, errors.New("认证失败")
 	}
 
 	if card.IsFrozen() {
-		return nil, errors.New("卡密已冻结")
+		return nil, errors.New("认证失败")
 	}
 
 	// 验证设备码
 	if project.EnableHWID {
 		if req.HWID == "" {
-			return nil, errors.New("该项目需要提供设备码")
+			return nil, errors.New("认证失败")
 		}
 		found := false
 		for _, hwid := range card.HWIDList {
@@ -99,7 +101,7 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		}
 		if !found {
 			if !card.CanAddHWID() {
-				return nil, errors.New("设备码数量已达上限")
+				return nil, errors.New("认证失败")
 			}
 			card.HWIDList = append(card.HWIDList, req.HWID)
 			database.DB.Save(&card)
@@ -109,7 +111,7 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 	// 验证IP地址
 	if project.EnableIP {
 		if req.IP == "" {
-			return nil, errors.New("该项目需要提供IP地址")
+			return nil, errors.New("认证失败")
 		}
 		found := false
 		for _, ip := range card.IPList {
@@ -120,7 +122,7 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 		}
 		if !found {
 			if !card.CanAddIP() {
-				return nil, errors.New("IP数量已达上限")
+				return nil, errors.New("认证失败")
 			}
 			card.IPList = append(card.IPList, req.IP)
 			database.DB.Save(&card)
@@ -158,14 +160,30 @@ type AdminLoginResponse struct {
 	Token string `json:"token"`
 }
 
-var jwtSecret = []byte("nextkey-admin-secret")
+var jwtSecret []byte
+
+func SetJWTSecret(secret string) {
+	jwtSecret = []byte(secret)
+}
 
 func (s *AuthService) AdminLogin(req *AdminLoginRequest) (*AdminLoginResponse, error) {
-	hashedPassword := hashPassword(req.Password)
-
 	var admin models.Admin
-	if err := database.DB.Where("username = ? AND password = ?", req.Username, hashedPassword).First(&admin).Error; err != nil {
+	if err := database.DB.Where("username = ?", req.Username).First(&admin).Error; err != nil {
 		return nil, errors.New("用户名或密码错误")
+	}
+
+	// 验证密码 - 支持bcrypt和旧的SHA256格式(向后兼容)
+	if !verifyPassword(admin.Password, req.Password) {
+		return nil, errors.New("用户名或密码错误")
+	}
+
+	// 如果使用旧的SHA256格式,自动升级到bcrypt
+	if !strings.HasPrefix(admin.Password, "$2a$") && !strings.HasPrefix(admin.Password, "$2b$") {
+		newHash, err := hashPasswordBcrypt(req.Password)
+		if err == nil {
+			admin.Password = newHash
+			database.DB.Save(&admin)
+		}
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -182,7 +200,28 @@ func (s *AuthService) AdminLogin(req *AdminLoginRequest) (*AdminLoginResponse, e
 	return &AdminLoginResponse{Token: tokenString}, nil
 }
 
-func hashPassword(password string) string {
+// hashPasswordBcrypt 使用bcrypt哈希密码
+func hashPasswordBcrypt(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// hashPasswordSHA256 使用SHA256哈希密码(仅用于向后兼容)
+func hashPasswordSHA256(password string) string {
 	hash := sha256.Sum256([]byte(password))
 	return hex.EncodeToString(hash[:])
+}
+
+// verifyPassword 验证密码,支持bcrypt和SHA256
+func verifyPassword(hashedPassword, password string) bool {
+	// 尝试bcrypt验证
+	if strings.HasPrefix(hashedPassword, "$2a$") || strings.HasPrefix(hashedPassword, "$2b$") {
+		err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+		return err == nil
+	}
+	// 向后兼容SHA256
+	return hashedPassword == hashPasswordSHA256(password)
 }

@@ -49,14 +49,14 @@ func DecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		var existingNonce models.Nonce
-		if err := database.DB.Where("nonce = ?", encReq.Nonce).First(&existingNonce).Error; err == nil {
+		// 使用数据库唯一约束防止重放攻击和竞态条件
+		nonce := models.Nonce{Nonce: encReq.Nonce}
+		if err := database.DB.Create(&nonce).Error; err != nil {
+			// 违反唯一约束表示nonce已存在(重放攻击)
 			utils.Error(c, 401, "检测到重放攻击")
 			c.Abort()
 			return
 		}
-
-		database.DB.Create(&models.Nonce{Nonce: encReq.Nonce})
 
 		plaintext, err := crypto.Decrypt(encReq.Data)
 		if err != nil {

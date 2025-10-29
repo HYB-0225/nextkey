@@ -5,20 +5,31 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"runtime"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/api"
 	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/database"
+	"github.com/nextkey/nextkey/backend/internal/middleware"
+	"github.com/nextkey/nextkey/backend/internal/service"
 	"github.com/nextkey/nextkey/backend/pkg/config"
 )
 
 func main() {
+	// 检查配置文件权限
+	checkConfigPermissions()
+
 	cfg := config.Load()
 
 	if err := crypto.SetKey(cfg.Security.AESKey); err != nil {
 		log.Fatalf("设置加密密钥失败: %v", err)
 	}
+
+	// 设置JWT密钥
+	middleware.SetJWTSecret(cfg.Security.JWTSecret)
+	service.SetJWTSecret(cfg.Security.JWTSecret)
 
 	if err := database.Initialize(cfg.Database.Path, cfg); err != nil {
 		log.Fatalf("数据库初始化失败: %v", err)
@@ -29,6 +40,9 @@ func main() {
 	}
 
 	router := gin.Default()
+
+	// 添加CORS中间件
+	router.Use(middleware.CORSMiddleware())
 
 	api.RegisterRoutes(router)
 
@@ -60,5 +74,36 @@ func main() {
 
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("服务启动失败: %v", err)
+	}
+}
+
+func checkConfigPermissions() {
+	configPath := "config.yaml"
+
+	// 检查文件是否存在
+	info, err := os.Stat(configPath)
+	if os.IsNotExist(err) {
+		// 文件不存在,将会生成默认配置
+		return
+	}
+	if err != nil {
+		log.Printf("警告: 无法检查配置文件权限: %v", err)
+		return
+	}
+
+	// Windows系统跳过权限检查
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	// Unix/Linux系统检查文件权限
+	mode := info.Mode()
+	perm := mode.Perm()
+
+	// 检查是否对组或其他用户可读
+	if perm&0077 != 0 {
+		log.Printf("警告: 配置文件 %s 权限过于宽松 (%s)", configPath, perm)
+		log.Printf("建议运行: chmod 600 %s", configPath)
+		log.Println("配置文件包含敏感密钥,应限制访问权限")
 	}
 }

@@ -8,7 +8,7 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	{
-		api.POST("/auth/login", middleware.DecryptMiddleware(), CardLogin)
+		api.POST("/auth/login", middleware.LoginRateLimitMiddleware(), middleware.DecryptMiddleware(), CardLogin)
 
 		authenticated := api.Group("")
 		authenticated.Use(middleware.AuthMiddleware())
@@ -23,7 +23,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	admin := r.Group("/admin")
 	{
-		admin.POST("/login", AdminLogin)
+		admin.POST("/login", middleware.LoginRateLimitMiddleware(), AdminLogin)
 
 		adminAuth := admin.Group("")
 		adminAuth.Use(middleware.AdminAuthMiddleware())
