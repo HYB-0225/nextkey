@@ -196,6 +196,15 @@ func (s *CardService) Update(id uint, req *UpdateCardRequest) (*models.Card, err
 
 	if req.Duration != nil {
 		card.Duration = *req.Duration
+		// 如果卡密已激活，从激活时间重新计算到期时间
+		if card.Activated && card.ActivatedAt != nil {
+			if card.Duration > 0 {
+				expireAt := card.ActivatedAt.Add(time.Duration(card.Duration) * time.Second)
+				card.ExpireAt = &expireAt
+			} else {
+				card.ExpireAt = nil
+			}
+		}
 	}
 	if req.Note != nil {
 		card.Note = *req.Note
@@ -268,40 +277,87 @@ func (s *CardService) BatchUpdate(ids []uint, req *UpdateCardRequest) error {
 		}
 	}()
 
-	updates := make(map[string]interface{})
+	// 如果修改了 Duration，需要单独处理每个卡密以重新计算 ExpireAt
 	if req.Duration != nil {
-		updates["duration"] = *req.Duration
-	}
-	if req.Note != nil {
-		updates["note"] = *req.Note
-	}
-	if req.CardType != nil {
-		updates["card_type"] = *req.CardType
-	}
-	if req.MaxHWID != nil {
-		updates["max_hwid"] = *req.MaxHWID
-	}
-	if req.MaxIP != nil {
-		updates["max_ip"] = *req.MaxIP
-	}
-	if req.CustomData != nil {
-		updates["custom_data"] = *req.CustomData
-	}
-	if req.HWIDList != nil {
-		updates["hwid_list"] = *req.HWIDList
-	}
-	if req.IPList != nil {
-		updates["ip_list"] = *req.IPList
-	}
+		var cards []models.Card
+		if err := tx.Where("id IN ?", ids).Find(&cards).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 
-	if len(updates) == 0 {
-		tx.Rollback()
-		return errors.New("没有需要更新的字段")
-	}
+		for i := range cards {
+			cards[i].Duration = *req.Duration
+			// 如果卡密已激活，从激活时间重新计算到期时间
+			if cards[i].Activated && cards[i].ActivatedAt != nil {
+				if cards[i].Duration > 0 {
+					expireAt := cards[i].ActivatedAt.Add(time.Duration(cards[i].Duration) * time.Second)
+					cards[i].ExpireAt = &expireAt
+				} else {
+					cards[i].ExpireAt = nil
+				}
+			}
 
-	if err := tx.Model(&models.Card{}).Where("id IN ?", ids).Updates(updates).Error; err != nil {
-		tx.Rollback()
-		return err
+			if req.Note != nil {
+				cards[i].Note = *req.Note
+			}
+			if req.CardType != nil {
+				cards[i].CardType = *req.CardType
+			}
+			if req.MaxHWID != nil {
+				cards[i].MaxHWID = *req.MaxHWID
+			}
+			if req.MaxIP != nil {
+				cards[i].MaxIP = *req.MaxIP
+			}
+			if req.CustomData != nil {
+				cards[i].CustomData = *req.CustomData
+			}
+			if req.HWIDList != nil {
+				cards[i].HWIDList = *req.HWIDList
+			}
+			if req.IPList != nil {
+				cards[i].IPList = *req.IPList
+			}
+
+			if err := tx.Save(&cards[i]).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	} else {
+		// 如果没有修改 Duration，可以使用批量更新
+		updates := make(map[string]interface{})
+		if req.Note != nil {
+			updates["note"] = *req.Note
+		}
+		if req.CardType != nil {
+			updates["card_type"] = *req.CardType
+		}
+		if req.MaxHWID != nil {
+			updates["max_hwid"] = *req.MaxHWID
+		}
+		if req.MaxIP != nil {
+			updates["max_ip"] = *req.MaxIP
+		}
+		if req.CustomData != nil {
+			updates["custom_data"] = *req.CustomData
+		}
+		if req.HWIDList != nil {
+			updates["hwid_list"] = *req.HWIDList
+		}
+		if req.IPList != nil {
+			updates["ip_list"] = *req.IPList
+		}
+
+		if len(updates) == 0 {
+			tx.Rollback()
+			return errors.New("没有需要更新的字段")
+		}
+
+		if err := tx.Model(&models.Card{}).Where("id IN ?", ids).Updates(updates).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	return tx.Commit().Error

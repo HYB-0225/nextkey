@@ -68,8 +68,10 @@ func (s *AuthService) CardLogin(req *LoginRequest) (*LoginResponse, error) {
 
 	if !card.Activated {
 		card.Activated = true
+		activatedAt := time.Now()
+		card.ActivatedAt = &activatedAt
 		if card.Duration > 0 {
-			expireAt := time.Now().Add(time.Duration(card.Duration) * time.Second)
+			expireAt := activatedAt.Add(time.Duration(card.Duration) * time.Second)
 			card.ExpireAt = &expireAt
 		}
 		database.DB.Save(&card)
