@@ -10,4 +10,4 @@ security:
     replay_window: 300
 admin:
     username: admin
-    password: admin123
+    password: admin1234

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nextkey/nextkey/backend/internal/models"
+	"github.com/nextkey/nextkey/backend/pkg/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -15,7 +16,7 @@ import (
 
 var DB *gorm.DB
 
-func Initialize(dbPath string) error {
+func Initialize(dbPath string, cfg *config.Config) error {
 	var err error
 	DB, err = gorm.Open(sqlite.Dialector{
 		DriverName: "sqlite",
@@ -31,7 +32,7 @@ func Initialize(dbPath string) error {
 		return err
 	}
 
-	if err := initializeDefaultAdmin(); err != nil {
+	if err := syncAdminFromConfig(cfg); err != nil {
 		return err
 	}
 
@@ -127,24 +128,35 @@ func migrateTokenCardID() error {
 	return nil
 }
 
-func initializeDefaultAdmin() error {
-	var count int64
-	DB.Model(&models.Admin{}).Count(&count)
-	if count > 0 {
-		return nil
-	}
+func syncAdminFromConfig(cfg *config.Config) error {
+	hashedPassword := hashPassword(cfg.Admin.Password)
 
-	hashedPassword := hashPassword("admin123")
-	admin := &models.Admin{
-		Username: "admin",
-		Password: hashedPassword,
-	}
+	// 查找现有管理员账号
+	var admin models.Admin
+	err := DB.First(&admin).Error
 
-	if err := DB.Create(admin).Error; err != nil {
+	if err == gorm.ErrRecordNotFound {
+		// 不存在管理员账号，创建新的
+		admin = models.Admin{
+			Username: cfg.Admin.Username,
+			Password: hashedPassword,
+		}
+		if err := DB.Create(&admin).Error; err != nil {
+			return err
+		}
+		log.Printf("已创建管理员账号: %s (密码来自配置文件)", cfg.Admin.Username)
+	} else if err != nil {
 		return err
+	} else {
+		// 已存在管理员账号，同步更新为配置文件中的值
+		admin.Username = cfg.Admin.Username
+		admin.Password = hashedPassword
+		if err := DB.Save(&admin).Error; err != nil {
+			return err
+		}
+		log.Printf("已同步管理员账号: %s (密码已更新为配置文件中的值)", cfg.Admin.Username)
 	}
 
-	log.Println("已创建默认管理员账号: admin / admin123")
 	return nil
 }
 

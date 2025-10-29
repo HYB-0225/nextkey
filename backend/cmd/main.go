@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("设置加密密钥失败: %v", err)
 	}
 
-	if err := database.Initialize(cfg.Database.Path); err != nil {
+	if err := database.Initialize(cfg.Database.Path, cfg); err != nil {
 		log.Fatalf("数据库初始化失败: %v", err)
 	}
 
