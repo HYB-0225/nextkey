@@ -1,5 +1,5 @@
 export const CARD_TYPES = [
-  { value: 'trial', label: '试用卡' },
+  { value: 'trial', label: '天卡' },
   { value: 'month', label: '月卡' },
   { value: 'quarter', label: '季卡' },
   { value: 'year', label: '年卡' },
