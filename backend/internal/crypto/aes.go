@@ -5,9 +5,26 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 )
+
+func init() {
+	Register(EncryptorFactory{
+		Meta: EncryptorMeta{
+			Scheme:        "aes-256-gcm",
+			Name:          "AES-256-GCM",
+			Description:   "高强度对称加密算法，推荐使用",
+			SecurityLevel: "secure",
+			IsDeprecated:  false,
+		},
+		NewEncryptor: func(key string) (Encryptor, error) {
+			return NewAESEncryptor(key)
+		},
+		GenerateKey: generateAESKey,
+	})
+}
 
 type AESEncryptor struct {
 	key []byte
@@ -26,6 +43,12 @@ func NewAESEncryptor(key string) (*AESEncryptor, error) {
 
 func (e *AESEncryptor) Scheme() string {
 	return "aes-256-gcm"
+}
+
+func generateAESKey() string {
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
 
 func decodeKey(key string) ([]byte, error) {

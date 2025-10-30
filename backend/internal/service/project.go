@@ -28,9 +28,26 @@ type CreateProjectRequest struct {
 	UnbindVerifyHWID bool   `json:"unbind_verify_hwid"`
 	UnbindDeductTime int    `json:"unbind_deduct_time"`
 	UnbindCooldown   int    `json:"unbind_cooldown"`
+	EncryptionScheme string `json:"encryption_scheme"` // 加密方案，默认 aes-256-gcm
 }
 
 func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, error) {
+	// 设置默认加密方案
+	if req.EncryptionScheme == "" {
+		req.EncryptionScheme = "aes-256-gcm"
+	}
+
+	// 验证加密方案是否支持
+	if !crypto.SchemeExists(req.EncryptionScheme) {
+		return nil, errors.New("不支持的加密方案: " + req.EncryptionScheme)
+	}
+
+	// 生成对应方案的密钥
+	encryptionKey, err := crypto.GenerateKey(req.EncryptionScheme)
+	if err != nil {
+		return nil, err
+	}
+
 	project := &models.Project{
 		UUID:             uuid.New().String(),
 		Name:             req.Name,
@@ -45,8 +62,8 @@ func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, err
 		UnbindVerifyHWID: req.UnbindVerifyHWID,
 		UnbindDeductTime: req.UnbindDeductTime,
 		UnbindCooldown:   req.UnbindCooldown,
-		EncryptionScheme: "aes-256-gcm",
-		EncryptionKey:    crypto.GenerateEncryptionKey(),
+		EncryptionScheme: req.EncryptionScheme,
+		EncryptionKey:    encryptionKey,
 	}
 
 	if err := database.DB.Create(project).Error; err != nil {
@@ -125,6 +142,24 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 	projects := make([]*models.Project, 0, len(reqs))
 
 	for _, req := range reqs {
+		// 设置默认加密方案
+		if req.EncryptionScheme == "" {
+			req.EncryptionScheme = "aes-256-gcm"
+		}
+
+		// 验证加密方案是否支持
+		if !crypto.SchemeExists(req.EncryptionScheme) {
+			tx.Rollback()
+			return nil, errors.New("不支持的加密方案: " + req.EncryptionScheme)
+		}
+
+		// 生成对应方案的密钥
+		encryptionKey, err := crypto.GenerateKey(req.EncryptionScheme)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
 		project := &models.Project{
 			UUID:             uuid.New().String(),
 			Name:             req.Name,
@@ -139,8 +174,8 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 			UnbindVerifyHWID: req.UnbindVerifyHWID,
 			UnbindDeductTime: req.UnbindDeductTime,
 			UnbindCooldown:   req.UnbindCooldown,
-			EncryptionScheme: "aes-256-gcm",
-			EncryptionKey:    crypto.GenerateEncryptionKey(),
+			EncryptionScheme: req.EncryptionScheme,
+			EncryptionKey:    encryptionKey,
 		}
 
 		if err := tx.Create(project).Error; err != nil {
@@ -176,4 +211,33 @@ func (s *ProjectService) BatchDelete(ids []uint) error {
 	}
 
 	return tx.Commit().Error
+}
+
+// UpdateEncryptionScheme 更新项目的加密方案
+func (s *ProjectService) UpdateEncryptionScheme(id uint, scheme string) (*models.Project, error) {
+	var project models.Project
+	if err := database.DB.First(&project, id).Error; err != nil {
+		return nil, errors.New("项目不存在")
+	}
+
+	// 验证加密方案是否支持
+	if !crypto.SchemeExists(scheme) {
+		return nil, errors.New("不支持的加密方案: " + scheme)
+	}
+
+	// 生成新密钥
+	encryptionKey, err := crypto.GenerateKey(scheme)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新项目
+	project.EncryptionScheme = scheme
+	project.EncryptionKey = encryptionKey
+
+	if err := database.DB.Save(&project).Error; err != nil {
+		return nil, err
+	}
+
+	return &project, nil
 }

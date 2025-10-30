@@ -57,11 +57,34 @@
       <el-form-item label="描述">
         <el-input v-model="form.description" type="textarea" />
       </el-form-item>
-      <el-divider v-if="projectData" content-position="left">加密配置</el-divider>
-      <el-form-item v-if="projectData" label="加密方案">
-        <el-select v-model="form.encryption_scheme" disabled>
-          <el-option label="AES-256-GCM" value="aes-256-gcm" />
+      <el-divider content-position="left">加密配置</el-divider>
+      <el-form-item label="加密方案">
+        <el-select 
+          v-model="form.encryption_scheme" 
+          :loading="loadingSchemes"
+          :disabled="!projectData && loadingSchemes"
+          placeholder="选择加密方案"
+        >
+          <el-option 
+            v-for="scheme in encryptionSchemes" 
+            :key="scheme.scheme"
+            :label="scheme.name"
+            :value="scheme.scheme"
+          >
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>{{ scheme.name }}</span>
+              <el-tag 
+                :type="scheme.security_level === 'secure' ? 'success' : scheme.security_level === 'weak' ? 'warning' : 'danger'"
+                size="small"
+                style="margin-left: 8px;"
+              >
+                {{ scheme.security_level === 'secure' ? '安全' : scheme.security_level === 'weak' ? '弱' : '不安全' }}
+              </el-tag>
+            </div>
+          </el-option>
         </el-select>
+        <div class="form-tip" v-if="!projectData">创建后将自动生成加密密钥</div>
+        <div class="form-tip" v-else>修改加密方案将生成新密钥，需在客户端同步更新</div>
       </el-form-item>
       <el-form-item v-if="projectData" label="加密密钥">
         <el-input v-model="form.encryption_key" readonly>
@@ -82,10 +105,12 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { staggerFormItems } from '@/utils/animations'
 import { copyToClipboard } from '@/utils/copy'
+import { getEncryptionSchemes, updateProjectEncryption } from '@/api/crypto'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const { isMobile } = useResponsive()
 
@@ -107,6 +132,9 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'save'])
 
 const dialogVisible = ref(false)
+const encryptionSchemes = ref([])
+const loadingSchemes = ref(false)
+const originalScheme = ref('')
 
 const form = ref({
   name: '',
@@ -120,7 +148,8 @@ const form = ref({
   unbind_verify_hwid: true,
   unbind_deduct_time: 0,
   unbind_cooldown: 86400,
-  description: ''
+  description: '',
+  encryption_scheme: 'aes-256-gcm'
 })
 
 watch(() => props.visible, (val) => {
@@ -128,10 +157,16 @@ watch(() => props.visible, (val) => {
   if (val) {
     if (props.projectData) {
       form.value = { ...props.projectData }
+      originalScheme.value = props.projectData.encryption_scheme
     } else {
       resetForm()
+      originalScheme.value = ''
     }
   }
+})
+
+onMounted(() => {
+  loadEncryptionSchemes()
 })
 
 watch(dialogVisible, (val) => {
@@ -151,7 +186,22 @@ const resetForm = () => {
     unbind_verify_hwid: true,
     unbind_deduct_time: 0,
     unbind_cooldown: 86400,
-    description: ''
+    description: '',
+    encryption_scheme: 'aes-256-gcm'
+  }
+}
+
+const loadEncryptionSchemes = async () => {
+  try {
+    loadingSchemes.value = true
+    const res = await getEncryptionSchemes()
+    if (res.code === 0) {
+      encryptionSchemes.value = res.data || []
+    }
+  } catch (error) {
+    console.error('加载加密方案失败:', error)
+  } finally {
+    loadingSchemes.value = false
   }
 }
 
@@ -159,7 +209,40 @@ const handleClose = () => {
   dialogVisible.value = false
 }
 
-const handleSave = () => {
+const handleSave = async () => {
+  // 如果是编辑模式且加密方案发生变化，需要确认
+  if (props.projectData && form.value.encryption_scheme !== originalScheme.value) {
+    try {
+      await ElMessageBox.confirm(
+        '修改加密方案将生成新的密钥，客户端需要同步更新。确定要修改吗？',
+        '确认修改',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+      
+      // 单独更新加密方案
+      try {
+        const res = await updateProjectEncryption(props.projectData.id, {
+          encryption_scheme: form.value.encryption_scheme
+        })
+        if (res.code === 0) {
+          form.value.encryption_key = res.data.encryption_key
+          ElMessage.success('加密方案已更新')
+        }
+      } catch (error) {
+        ElMessage.error('更新加密方案失败')
+        return
+      }
+    } catch {
+      // 用户取消，恢复原值
+      form.value.encryption_scheme = originalScheme.value
+      return
+    }
+  }
+  
   emit('save', form.value)
 }
 

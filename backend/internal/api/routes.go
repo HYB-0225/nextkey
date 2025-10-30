@@ -9,6 +9,7 @@ func RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	{
 		api.POST("/auth/login", middleware.LoginRateLimitMiddleware(), middleware.DecryptMiddleware(), CardLogin)
+		api.GET("/crypto/schemes", GetEncryptionSchemes)
 
 		authenticated := api.Group("")
 		authenticated.Use(middleware.AuthMiddleware())
@@ -39,6 +40,7 @@ func RegisterRoutes(r *gin.Engine) {
 			adminAuth.GET("/projects/:uuid", GetProjectByUUID)
 			adminAuth.POST("/projects/batch", BatchCreateProjects)
 			adminAuth.DELETE("/projects/batch", BatchDeleteProjects)
+			adminAuth.POST("/projects/:id/encryption", UpdateProjectEncryption)
 
 			adminAuth.GET("/cards", ListCards)
 			adminAuth.POST("/cards", CreateCards)
