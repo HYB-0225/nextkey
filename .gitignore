@@ -48,6 +48,7 @@ build/
 Thumbs.db
 dist
 .cursor/
+CLAUDE.md
 
 # Rust
 target/

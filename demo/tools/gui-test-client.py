@@ -13,7 +13,7 @@ import time
 import secrets
 import threading
 from datetime import datetime
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, ARC4
 import requests
 import os
 import yaml
@@ -22,35 +22,80 @@ import yaml
 class NextKeyClient:
     """NextKey API 客户端"""
     
-    def __init__(self, server_url, project_uuid, aes_key):
+    def __init__(self, server_url, project_uuid, aes_key, encryption_scheme="aes-256-gcm"):
         self.server_url = server_url.rstrip('/')
         self.project_uuid = project_uuid
+        self.encryption_scheme = encryption_scheme.lower()
         self.aes_key = self._prepare_key(aes_key)
         self.token = None
         self.session = requests.Session()
         self.session.headers.update({'Content-Type': 'application/json'})
     
     def _prepare_key(self, key_str):
-        """准备AES密钥 - 匹配Go后端的decodeKey逻辑"""
-        # 尝试base64解码
-        try:
-            key_bytes = base64.b64decode(key_str)
-            if len(key_bytes) == 32:
-                return key_bytes
-        except:
-            pass
+        """准备加密密钥 - 根据加密方案处理不同格式"""
+        if self.encryption_scheme == "aes-256-gcm":
+            # AES-GCM需要32字节密钥
+            # 尝试base64解码
+            try:
+                key_bytes = base64.b64decode(key_str)
+                if len(key_bytes) == 32:
+                    return key_bytes
+            except:
+                pass
+            
+            # 64字符时，取前32字符的UTF-8字节（匹配Go的[]byte(key)[:32]）
+            if len(key_str) == 64:
+                return key_str[:32].encode('utf-8')
+            
+            # 其他情况直接编码
+            key_bytes = key_str.encode('utf-8')
+            if len(key_bytes) != 32:
+                raise ValueError(f"AES密钥长度错误，应为32字节，实际: {len(key_bytes)}")
+            return key_bytes
         
-        # 64字符时，取前32字符的UTF-8字节（匹配Go的[]byte(key)[:32]）
-        if len(key_str) == 64:
-            return key_str[:32].encode('utf-8')
+        elif self.encryption_scheme in ["rc4", "xor"]:
+            # RC4和XOR尝试hex解码，否则直接使用字节
+            try:
+                return bytes.fromhex(key_str)
+            except ValueError:
+                return key_str.encode('utf-8')
         
-        # 其他情况直接编码
-        key_bytes = key_str.encode('utf-8')
-        if len(key_bytes) != 32:
-            raise ValueError(f"AES密钥长度错误，应为32字节，实际: {len(key_bytes)}")
-        return key_bytes
+        elif self.encryption_scheme == "custom-base64":
+            # 自定义Base64需要64字符的映射表
+            if len(key_str) != 64:
+                raise ValueError(f"自定义Base64密钥必须是64字符，实际: {len(key_str)}")
+            return key_str.encode('utf-8')
+        
+        else:
+            raise ValueError(f"不支持的加密方案: {self.encryption_scheme}")
     
     def encrypt(self, plaintext):
+        """根据加密方案加密"""
+        if self.encryption_scheme == "aes-256-gcm":
+            return self._encrypt_aes_gcm(plaintext)
+        elif self.encryption_scheme == "rc4":
+            return self._encrypt_rc4(plaintext)
+        elif self.encryption_scheme == "xor":
+            return self._encrypt_xor(plaintext)
+        elif self.encryption_scheme == "custom-base64":
+            return self._encrypt_custom_base64(plaintext)
+        else:
+            raise ValueError(f"不支持的加密方案: {self.encryption_scheme}")
+    
+    def decrypt(self, ciphertext):
+        """根据加密方案解密"""
+        if self.encryption_scheme == "aes-256-gcm":
+            return self._decrypt_aes_gcm(ciphertext)
+        elif self.encryption_scheme == "rc4":
+            return self._decrypt_rc4(ciphertext)
+        elif self.encryption_scheme == "xor":
+            return self._decrypt_xor(ciphertext)
+        elif self.encryption_scheme == "custom-base64":
+            return self._decrypt_custom_base64(ciphertext)
+        else:
+            raise ValueError(f"不支持的加密方案: {self.encryption_scheme}")
+    
+    def _encrypt_aes_gcm(self, plaintext):
         """AES-GCM加密"""
         # 生成12字节nonce (Go的gcm.NonceSize()返回12)
         nonce = secrets.token_bytes(12)
@@ -60,7 +105,7 @@ class NextKeyClient:
         encrypted = nonce + ciphertext + tag
         return base64.b64encode(encrypted).decode()
     
-    def decrypt(self, ciphertext):
+    def _decrypt_aes_gcm(self, ciphertext):
         """AES-GCM解密"""
         data = base64.b64decode(ciphertext)
         nonce = data[:12]
@@ -68,6 +113,69 @@ class NextKeyClient:
         ciphertext = data[12:-16]
         cipher = AES.new(self.aes_key, AES.MODE_GCM, nonce=nonce)
         return cipher.decrypt_and_verify(ciphertext, tag).decode()
+    
+    def _encrypt_rc4(self, plaintext):
+        """RC4加密"""
+        cipher = ARC4.new(self.aes_key)
+        ciphertext = cipher.encrypt(plaintext.encode())
+        return base64.b64encode(ciphertext).decode()
+    
+    def _decrypt_rc4(self, ciphertext):
+        """RC4解密"""
+        data = base64.b64decode(ciphertext)
+        cipher = ARC4.new(self.aes_key)
+        plaintext = cipher.decrypt(data)
+        return plaintext.decode()
+    
+    def _encrypt_xor(self, plaintext):
+        """XOR加密"""
+        plaintext_bytes = plaintext.encode()
+        ciphertext = bytearray()
+        key_len = len(self.aes_key)
+        for i, byte in enumerate(plaintext_bytes):
+            ciphertext.append(byte ^ self.aes_key[i % key_len])
+        return base64.b64encode(bytes(ciphertext)).decode()
+    
+    def _decrypt_xor(self, ciphertext):
+        """XOR解密"""
+        data = base64.b64decode(ciphertext)
+        plaintext = bytearray()
+        key_len = len(self.aes_key)
+        for i, byte in enumerate(data):
+            plaintext.append(byte ^ self.aes_key[i % key_len])
+        return bytes(plaintext).decode()
+    
+    def _encrypt_custom_base64(self, plaintext):
+        """自定义Base64加密"""
+        # 创建自定义字符表
+        custom_alphabet = self.aes_key.decode('utf-8')
+        standard_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        
+        # 使用标准Base64编码
+        standard_encoded = base64.b64encode(plaintext.encode()).decode()
+        
+        # 转换为自定义字符表
+        trans_table = str.maketrans(standard_alphabet, custom_alphabet)
+        custom_encoded = standard_encoded.translate(trans_table)
+        
+        # 外层再用标准Base64包裹
+        return base64.b64encode(custom_encoded.encode()).decode()
+    
+    def _decrypt_custom_base64(self, ciphertext):
+        """自定义Base64解密"""
+        # 先解开外层标准Base64
+        custom_encoded = base64.b64decode(ciphertext).decode()
+        
+        # 创建自定义字符表
+        custom_alphabet = self.aes_key.decode('utf-8')
+        standard_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        
+        # 转换回标准字符表
+        trans_table = str.maketrans(custom_alphabet, standard_alphabet)
+        standard_encoded = custom_encoded.translate(trans_table)
+        
+        # 使用标准Base64解码
+        return base64.b64decode(standard_encoded).decode()
     
     def generate_nonce(self):
         """生成随机nonce"""
@@ -233,14 +341,28 @@ class NextKeyGUI:
         self.project_uuid_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.project_uuid_var, width=50).grid(row=1, column=1, pady=5, padx=5)
         
+        # 加密方案
+        ttk.Label(frame, text="加密方案:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.encryption_scheme_var = tk.StringVar(value="aes-256-gcm")
+        scheme_combo = ttk.Combobox(frame, textvariable=self.encryption_scheme_var, width=47, state="readonly")
+        scheme_combo['values'] = (
+            'aes-256-gcm (推荐-安全)', 
+            'rc4 (已弃用-不安全)', 
+            'xor (已弃用-不安全)', 
+            'custom-base64 (不安全)'
+        )
+        scheme_combo.grid(row=2, column=1, pady=5, padx=5)
+        scheme_combo.bind('<<ComboboxSelected>>', self.on_scheme_changed)
+        
         # AES密钥
-        ttk.Label(frame, text="AES密钥:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        ttk.Label(frame, text="加密密钥:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.aes_key_var = tk.StringVar()
-        ttk.Entry(frame, textvariable=self.aes_key_var, width=50, show="*").grid(row=2, column=1, pady=5, padx=5)
+        self.key_entry = ttk.Entry(frame, textvariable=self.aes_key_var, width=50, show="*")
+        self.key_entry.grid(row=3, column=1, pady=5, padx=5)
         
         # 按钮框
         btn_frame = ttk.Frame(frame)
-        btn_frame.grid(row=3, column=0, columnspan=2, pady=10)
+        btn_frame.grid(row=4, column=0, columnspan=2, pady=10)
         
         ttk.Button(btn_frame, text="从config.yaml读取", command=self.load_from_yaml).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="保存配置", command=self.save_config).pack(side=tk.LEFT, padx=5)
@@ -249,7 +371,7 @@ class NextKeyGUI:
         # 显示/隐藏密钥
         self.show_key_var = tk.BooleanVar()
         ttk.Checkbutton(frame, text="显示密钥", variable=self.show_key_var, 
-                       command=self.toggle_key_visibility).grid(row=2, column=2, padx=5)
+                       command=self.toggle_key_visibility).grid(row=3, column=2, padx=5)
         
         # 状态信息
         status_frame = ttk.LabelFrame(parent, text="状态信息", padding=10)
@@ -414,19 +536,41 @@ class NextKeyGUI:
                 f.write(self.log_text.get(1.0, tk.END))
             messagebox.showinfo("成功", f"日志已导出到: {filename}")
     
+    def on_scheme_changed(self, event=None):
+        """加密方案变更时的回调"""
+        scheme_display = self.encryption_scheme_var.get()
+        scheme = scheme_display.split(' ')[0]  # 提取实际方案名
+        
+        # 显示安全警告
+        if scheme in ['rc4', 'xor', 'custom-base64']:
+            messagebox.showwarning(
+                "安全警告", 
+                f"警告：{scheme} 是不安全的加密方案！\n\n"
+                "仅用于测试和兼容性需求。\n"
+                "生产环境请使用 aes-256-gcm。"
+            )
+        
+        # 更新密钥格式提示
+        self.update_key_hint(scheme)
+    
+    def update_key_hint(self, scheme):
+        """更新密钥格式提示"""
+        hints = {
+            'aes-256-gcm': "32字节密钥 (64字符hex或base64)",
+            'rc4': "hex编码的密钥或任意字符串",
+            'xor': "hex编码的密钥或任意字符串",
+            'custom-base64': "64个不重复字符的映射表"
+        }
+        hint = hints.get(scheme, "")
+        self.status_text.delete(1.0, tk.END)
+        self.status_text.insert(tk.END, f"当前加密方案: {scheme}\n密钥格式: {hint}\n")
+    
     def toggle_key_visibility(self):
         """切换密钥显示"""
-        for widget in self.root.winfo_children():
-            if isinstance(widget, ttk.Notebook):
-                config_frame = widget.winfo_children()[0]
-                for child in config_frame.winfo_children():
-                    if isinstance(child, ttk.LabelFrame):
-                        for item in child.winfo_children():
-                            if isinstance(item, ttk.Entry) and item.cget('textvariable') == str(self.aes_key_var):
-                                if self.show_key_var.get():
-                                    item.config(show="")
-                                else:
-                                    item.config(show="*")
+        if self.show_key_var.get():
+            self.key_entry.config(show="")
+        else:
+            self.key_entry.config(show="*")
     
     def load_from_yaml(self):
         """从config.yaml读取配置（已弃用）"""
@@ -443,10 +587,14 @@ class NextKeyGUI:
     
     def save_config(self):
         """保存配置"""
+        scheme_display = self.encryption_scheme_var.get()
+        scheme = scheme_display.split(' ')[0]  # 提取实际方案名
+        
         config = {
             "server_url": self.server_url_var.get(),
             "project_uuid": self.project_uuid_var.get(),
-            "aes_key": self.aes_key_var.get()
+            "aes_key": self.aes_key_var.get(),
+            "encryption_scheme": scheme
         }
         
         try:
@@ -469,6 +617,16 @@ class NextKeyGUI:
                 self.project_uuid_var.set(config.get("project_uuid", ""))
                 self.aes_key_var.set(config.get("aes_key", ""))
                 
+                # 加载加密方案
+                scheme = config.get("encryption_scheme", "aes-256-gcm")
+                scheme_map = {
+                    'aes-256-gcm': 'aes-256-gcm (推荐-安全)',
+                    'rc4': 'rc4 (已弃用-不安全)',
+                    'xor': 'xor (已弃用-不安全)',
+                    'custom-base64': 'custom-base64 (不安全)'
+                }
+                self.encryption_scheme_var.set(scheme_map.get(scheme, 'aes-256-gcm (推荐-安全)'))
+                
                 self.log("配置已加载", "success")
             except Exception as e:
                 self.log(f"加载配置失败: {e}", "error")
@@ -476,10 +634,14 @@ class NextKeyGUI:
     def test_connection(self):
         """测试连接"""
         try:
+            scheme_display = self.encryption_scheme_var.get()
+            scheme = scheme_display.split(' ')[0]  # 提取实际方案名
+            
             self.client = NextKeyClient(
                 self.server_url_var.get(),
                 self.project_uuid_var.get(),
-                self.aes_key_var.get()
+                self.aes_key_var.get(),
+                scheme
             )
             
             url = f"{self.server_url_var.get()}/api/heartbeat"
@@ -488,10 +650,11 @@ class NextKeyGUI:
             self.status_text.delete(1.0, tk.END)
             self.status_text.insert(tk.END, "✓ 服务器连接成功\n")
             self.status_text.insert(tk.END, f"✓ 服务器URL: {self.server_url_var.get()}\n")
+            self.status_text.insert(tk.END, f"✓ 加密方案: {scheme}\n")
             self.status_text.insert(tk.END, f"✓ 响应状态: {response.status_code}\n")
             self.status_text.insert(tk.END, f"✓ 密钥前8字节(hex): {self.client.aes_key[:8].hex()}\n")
             
-            self.log("服务器连接测试成功", "success")
+            self.log(f"服务器连接测试成功 (方案: {scheme})", "success")
             messagebox.showinfo("成功", "服务器连接正常")
         except Exception as e:
             self.status_text.delete(1.0, tk.END)
@@ -503,10 +666,14 @@ class NextKeyGUI:
         """执行登录"""
         if not self.client:
             try:
+                scheme_display = self.encryption_scheme_var.get()
+                scheme = scheme_display.split(' ')[0]  # 提取实际方案名
+                
                 self.client = NextKeyClient(
                     self.server_url_var.get(),
                     self.project_uuid_var.get(),
-                    self.aes_key_var.get()
+                    self.aes_key_var.get(),
+                    scheme
                 )
             except Exception as e:
                 messagebox.showerror("错误", f"初始化客户端失败: {e}")

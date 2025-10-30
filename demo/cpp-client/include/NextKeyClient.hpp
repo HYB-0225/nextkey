@@ -67,7 +67,7 @@ struct ProjectInfo {
 class NextKeyClient {
 public:
     /**
-     * 构造函数
+     * 构造函数（默认AES-256-GCM加密方案）
      * @param server_url 服务器URL
      * @param project_uuid 项目UUID
      * @param aes_key AES密钥
@@ -76,6 +76,19 @@ public:
     NextKeyClient(const std::string& server_url,
                   const std::string& project_uuid,
                   const std::string& aes_key);
+    
+    /**
+     * 构造函数（指定加密方案）
+     * @param server_url 服务器URL
+     * @param project_uuid 项目UUID
+     * @param aes_key 加密密钥
+     * @param encryption_scheme 加密方案："aes-256-gcm", "rc4", "xor", "custom-base64"
+     * @throws NextKeyException 创建失败时抛出异常
+     */
+    NextKeyClient(const std::string& server_url,
+                  const std::string& project_uuid,
+                  const std::string& aes_key,
+                  const std::string& encryption_scheme);
     
     // 禁止拷贝
     NextKeyClient(const NextKeyClient&) = delete;

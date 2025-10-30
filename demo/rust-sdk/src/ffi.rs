@@ -42,12 +42,25 @@ fn string_to_c_char(s: String) -> *mut c_char {
     }
 }
 
-/// 创建NextKey客户端
+/// 创建NextKey客户端（默认AES-256-GCM）
 #[no_mangle]
 pub extern "C" fn nextkey_client_new(
     server_url: *const c_char,
     project_uuid: *const c_char,
     aes_key: *const c_char,
+) -> *mut NextKeyClient {
+    // 使用默认加密方案（AES-256-GCM）调用带scheme参数的函数
+    let scheme_cstr = std::ffi::CString::new("aes-256-gcm").unwrap();
+    nextkey_client_new_with_scheme(server_url, project_uuid, aes_key, scheme_cstr.as_ptr())
+}
+
+/// 创建NextKey客户端（指定加密方案）
+#[no_mangle]
+pub extern "C" fn nextkey_client_new_with_scheme(
+    server_url: *const c_char,
+    project_uuid: *const c_char,
+    aes_key: *const c_char,
+    scheme: *const c_char,
 ) -> *mut NextKeyClient {
     clear_last_error();
 
@@ -81,7 +94,30 @@ pub extern "C" fn nextkey_client_new(
         }
     };
 
-    match NextKeyClient::new(&server_url, &project_uuid, &aes_key) {
+    let scheme_str = unsafe {
+        match c_str_to_string(scheme) {
+            Some(s) => s,
+            None => {
+                set_last_error("scheme参数无效".to_string());
+                return ptr::null_mut();
+            }
+        }
+    };
+
+    // 解析加密方案
+    use crate::crypto::EncryptionScheme;
+    let encryption_scheme = match scheme_str.to_lowercase().as_str() {
+        "aes-256-gcm" => EncryptionScheme::AES256GCM,
+        "rc4" => EncryptionScheme::RC4,
+        "xor" => EncryptionScheme::XOR,
+        "custom-base64" => EncryptionScheme::CustomBase64,
+        _ => {
+            set_last_error(format!("不支持的加密方案: {}", scheme_str));
+            return ptr::null_mut();
+        }
+    };
+
+    match NextKeyClient::new_with_scheme(&server_url, &project_uuid, &aes_key, encryption_scheme) {
         Ok(client) => Box::into_raw(Box::new(client)),
         Err(e) => {
             set_last_error(format!("创建客户端失败: {}", e));

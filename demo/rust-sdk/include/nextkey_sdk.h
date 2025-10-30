@@ -42,11 +42,19 @@ typedef struct NextKeyCardInfo {
 } NextKeyCardInfo;
 
 /*
- 创建NextKey客户端
+ 创建NextKey客户端（默认AES-256-GCM）
  */
 struct NextKeyClient *nextkey_client_new(const char *server_url,
                                          const char *project_uuid,
                                          const char *aes_key);
+
+/*
+ 创建NextKey客户端（指定加密方案）
+ */
+struct NextKeyClient *nextkey_client_new_with_scheme(const char *server_url,
+                                                     const char *project_uuid,
+                                                     const char *aes_key,
+                                                     const char *scheme);
 
 /*
  释放客户端
@@ -87,6 +95,11 @@ int32_t nextkey_get_project_info(struct NextKeyClient *client,
                                  char **name_out,
                                  char **version_out,
                                  char **update_url_out);
+
+/*
+ 解绑HWID
+ */
+int32_t nextkey_unbind_hwid(struct NextKeyClient *client, const char *card_key, const char *hwid);
 
 /*
  获取最后的错误消息

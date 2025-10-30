@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/api"
+	_ "github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/middleware"
 	"github.com/nextkey/nextkey/backend/internal/service"

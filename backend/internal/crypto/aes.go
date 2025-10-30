@@ -17,6 +17,7 @@ func init() {
 			Name:          "AES-256-GCM",
 			Description:   "高强度对称加密算法，推荐使用",
 			SecurityLevel: "secure",
+			Performance:   "medium",
 			IsDeprecated:  false,
 		},
 		NewEncryptor: func(key string) (Encryptor, error) {
@@ -36,7 +37,7 @@ func NewAESEncryptor(key string) (*AESEncryptor, error) {
 		return nil, err
 	}
 	if len(keyBytes) != 32 {
-		return nil, errors.New("AES key must be 32 bytes")
+		return nil, errors.New("AES密钥必须为32字节")
 	}
 	return &AESEncryptor{key: keyBytes}, nil
 }
@@ -100,7 +101,7 @@ func (e *AESEncryptor) Decrypt(ciphertext string) (string, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(data) < nonceSize {
-		return "", errors.New("ciphertext too short")
+		return "", errors.New("密文长度不足")
 	}
 
 	nonce, cipherData := data[:nonceSize], data[nonceSize:]

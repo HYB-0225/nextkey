@@ -109,6 +109,22 @@ impl NextKeyClient {
         })
     }
 
+    pub fn new_with_scheme(server_url: &str, project_uuid: &str, aes_key: &str, scheme: crate::crypto::EncryptionScheme) -> Result<Self> {
+        let crypto = Crypto::new_with_scheme(aes_key, scheme)?;
+        let http_client = HttpClient::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .context("创建HTTP客户端失败")?;
+
+        Ok(Self {
+            server_url: server_url.trim_end_matches('/').to_string(),
+            project_uuid: project_uuid.to_string(),
+            crypto,
+            token: None,
+            http_client,
+        })
+    }
+
     /// 获取当前token
     pub fn token(&self) -> Option<&str> {
         self.token.as_deref()

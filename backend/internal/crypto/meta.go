@@ -6,6 +6,7 @@ type EncryptorMeta struct {
 	Name          string `json:"name"`           // 显示名称
 	Description   string `json:"description"`    // 描述信息
 	SecurityLevel string `json:"security_level"` // 安全等级: secure/weak/insecure
+	Performance   string `json:"performance"`    // 性能等级: fast/medium/slow
 	IsDeprecated  bool   `json:"is_deprecated"`  // 是否已废弃
 }
 
@@ -15,4 +16,3 @@ type EncryptorFactory struct {
 	NewEncryptor func(key string) (Encryptor, error)
 	GenerateKey  func() string
 }
-

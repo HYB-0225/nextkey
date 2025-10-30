@@ -22,10 +22,60 @@ int main() {
     std::cout << "=== NextKey C++ 客户端示例 ===\n\n";
     
     try {
-        // 1. 创建客户端 (RAII自动管理资源)
-        std::cout << "[步骤 1] 创建 NextKey 客户端...\n";
+        // 1. 创建客户端 (RAII自动管理资源) - 使用默认AES-256-GCM加密方案
+        std::cout << "[步骤 1] 创建 NextKey 客户端（默认AES-256-GCM加密方案）...\n";
         auto client = std::make_unique<nextkey::NextKeyClient>(server_url, project_uuid, aes_key);
-        std::cout << "✓ 客户端创建成功\n\n";
+        std::cout << "✓ 客户端创建成功（加密方案: aes-256-gcm）\n\n";
+        
+        /*
+         * === 多加密方案支持 ===
+         * 
+         * NextKey SDK 支持多种加密方案：
+         * 
+         * 1. aes-256-gcm (推荐) - 安全的 AEAD 加密方案
+         *    密钥格式: 32字节密钥（64字符hex字符串）
+         *    示例: "78e54210cc4bdf4e6955a5e916f7000631d583e8dccc7ffb93525f53fdcbf061"
+         * 
+         * 2. rc4 (已弃用，不安全) - 传统流加密算法
+         *    密钥格式: hex编码的密钥字符串
+         *    示例: "632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037"
+         *    警告: RC4已被证明不安全，仅用于兼容性需求
+         * 
+         * 3. xor (已弃用，极不安全) - 简单异或加密
+         *    密钥格式: hex编码的密钥字符串或任意字符串
+         *    示例: "a1b2c3d4e5f6"
+         *    警告: XOR加密极不安全，仅用于测试
+         * 
+         * 4. custom-base64 (不安全) - 自定义字符表的Base64编码
+         *    密钥格式: 64个不重复字符的映射表
+         *    示例: "zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA9876543210+/"
+         *    警告: 仅用于简单混淆，不提供真正的加密保护
+         * 
+         * 使用其他加密方案的示例:
+         * 
+         * // RC4 示例（已弃用）
+         * auto client_rc4 = std::make_unique<nextkey::NextKeyClient>(
+         *     server_url, project_uuid,
+         *     "632005a33ebb7619c1efd3853c7109f1",  // 更短的RC4密钥
+         *     "rc4"
+         * );
+         * 
+         * // XOR 示例（极不安全）
+         * auto client_xor = std::make_unique<nextkey::NextKeyClient>(
+         *     server_url, project_uuid,
+         *     "a1b2c3d4e5f6",  // 简单的XOR密钥
+         *     "xor"
+         * );
+         * 
+         * // 自定义Base64 示例（不安全）
+         * auto client_base64 = std::make_unique<nextkey::NextKeyClient>(
+         *     server_url, project_uuid,
+         *     "zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA9876543210+/",
+         *     "custom-base64"
+         * );
+         * 
+         * 生产环境强烈建议使用 aes-256-gcm！
+         */
         
         // 2. 登录
         std::cout << "[步骤 2] 登录中...\n";

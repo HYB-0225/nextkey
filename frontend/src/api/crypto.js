@@ -1,10 +1,8 @@
+import axios from 'axios'
 import request from './request'
 
 export function getEncryptionSchemes() {
-  return request({
-    url: '/api/crypto/schemes',
-    method: 'get'
-  })
+  return axios.get('/api/crypto/schemes').then(res => res.data)
 }
 
 export function updateProjectEncryption(id, data) {

@@ -71,15 +71,24 @@
             :label="scheme.name"
             :value="scheme.scheme"
           >
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>{{ scheme.name }}</span>
-              <el-tag 
-                :type="scheme.security_level === 'secure' ? 'success' : scheme.security_level === 'weak' ? 'warning' : 'danger'"
-                size="small"
-                style="margin-left: 8px;"
-              >
-                {{ scheme.security_level === 'secure' ? '安全' : scheme.security_level === 'weak' ? '弱' : '不安全' }}
-              </el-tag>
+            <div class="scheme-option">
+              <span class="scheme-name">{{ scheme.name }}</span>
+              <div class="scheme-tags">
+                <el-tag 
+                  :type="getSecurityTagType(scheme.security_level)"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ getSecurityLabel(scheme.security_level) }}
+                </el-tag>
+                <el-tag 
+                  :type="getPerformanceTagType(scheme.performance)"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ getPerformanceLabel(scheme.performance) }}
+                </el-tag>
+              </div>
             </div>
           </el-option>
         </el-select>
@@ -195,7 +204,7 @@ const loadEncryptionSchemes = async () => {
   try {
     loadingSchemes.value = true
     const res = await getEncryptionSchemes()
-    if (res.code === 0) {
+    if (res && res.code === 0) {
       encryptionSchemes.value = res.data || []
     }
   } catch (error) {
@@ -260,6 +269,42 @@ const copyKey = () => {
     copyToClipboard(form.value.encryption_key, '加密密钥已复制')
   }
 }
+
+const getSecurityTagType = (level) => {
+  const types = {
+    'secure': 'success',
+    'weak': 'warning',
+    'insecure': 'danger'
+  }
+  return types[level] || 'info'
+}
+
+const getSecurityLabel = (level) => {
+  const labels = {
+    'secure': '安全',
+    'weak': '弱',
+    'insecure': '不安全'
+  }
+  return labels[level] || level
+}
+
+const getPerformanceTagType = (performance) => {
+  const types = {
+    'fast': 'primary',
+    'medium': 'info',
+    'slow': 'warning'
+  }
+  return types[performance] || 'info'
+}
+
+const getPerformanceLabel = (performance) => {
+  const labels = {
+    'fast': '快速',
+    'medium': '中等',
+    'slow': '慢速'
+  }
+  return labels[performance] || performance
+}
 </script>
 
 <style scoped>
@@ -281,6 +326,32 @@ const copyKey = () => {
 
 :deep(.el-divider) {
   margin: 24px 0 16px 0;
+}
+
+.scheme-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.scheme-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.scheme-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.scheme-tags .el-tag {
+  font-size: 11px;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 20px;
 }
 </style>
 

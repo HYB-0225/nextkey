@@ -23,7 +23,7 @@ void NextKeyClient::throw_if_error(const char* operation, int32_t error_code) {
     }
 }
 
-// 构造函数
+// 构造函数（默认AES-256-GCM）
 NextKeyClient::NextKeyClient(const std::string& server_url,
                              const std::string& project_uuid,
                              const std::string& aes_key)
@@ -33,6 +33,30 @@ NextKeyClient::NextKeyClient(const std::string& server_url,
         server_url.c_str(),
         project_uuid.c_str(),
         aes_key.c_str()
+    ));
+    
+    if (client_handle_ == nullptr) {
+        const char* error = nextkey_get_last_error();
+        throw NextKeyException(
+            error ? std::string("创建客户端失败: ") + error 
+                  : "创建客户端失败",
+            NEXTKEY_ERR_UNKNOWN
+        );
+    }
+}
+
+// 构造函数（指定加密方案）
+NextKeyClient::NextKeyClient(const std::string& server_url,
+                             const std::string& project_uuid,
+                             const std::string& aes_key,
+                             const std::string& encryption_scheme)
+    : client_handle_(nullptr), heartbeat_running_(false) {
+    
+    client_handle_ = reinterpret_cast<CNextKeyClient*>(::nextkey_client_new_with_scheme(
+        server_url.c_str(),
+        project_uuid.c_str(),
+        aes_key.c_str(),
+        encryption_scheme.c_str()
     ));
     
     if (client_handle_ == nullptr) {
