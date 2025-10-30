@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/models"
 )
@@ -44,6 +45,8 @@ func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, err
 		UnbindVerifyHWID: req.UnbindVerifyHWID,
 		UnbindDeductTime: req.UnbindDeductTime,
 		UnbindCooldown:   req.UnbindCooldown,
+		EncryptionScheme: "aes-256-gcm",
+		EncryptionKey:    crypto.GenerateEncryptionKey(),
 	}
 
 	if err := database.DB.Create(project).Error; err != nil {
@@ -136,6 +139,8 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 			UnbindVerifyHWID: req.UnbindVerifyHWID,
 			UnbindDeductTime: req.UnbindDeductTime,
 			UnbindCooldown:   req.UnbindCooldown,
+			EncryptionScheme: "aes-256-gcm",
+			EncryptionKey:    crypto.GenerateEncryptionKey(),
 		}
 
 		if err := tx.Create(project).Error; err != nil {

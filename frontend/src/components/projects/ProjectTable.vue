@@ -25,6 +25,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="version" label="版本" width="100" />
+      <el-table-column label="加密密钥" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">
+          <CopyableText :text="row.encryption_key" success-message="密钥已复制" :masked="true">
+            {{ row.encryption_key }}
+          </CopyableText>
+        </template>
+      </el-table-column>
       <el-table-column label="配置" width="180">
         <template #default="{ row }">
           <el-tag v-if="row.enable_hwid" size="small" style="margin-right: 5px">机器码</el-tag>

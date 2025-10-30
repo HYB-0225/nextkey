@@ -1,14 +1,17 @@
 <template>
   <span 
     class="copyable-text"
-    :class="{ 'is-copying': isCopying }"
+    :class="{ 'is-copying': isCopying, 'is-masked': masked && !isRevealed }"
     :title="isMobile ? '长按复制' : '点击复制'"
     @click="handleClick"
     @touchstart="handleTouchStart"
     @touchend="handleTouchEnd"
     @touchmove="handleTouchMove"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
   >
-    <slot>{{ text }}</slot>
+    <slot v-if="!masked || isRevealed">{{ text }}</slot>
+    <span v-else>{{ maskText(text) }}</span>
   </span>
 </template>
 
@@ -27,12 +30,24 @@ const props = defineProps({
   successMessage: {
     type: String,
     default: '复制成功'
+  },
+  masked: {
+    type: Boolean,
+    default: false
   }
 })
 
 const isCopying = ref(false)
+const isRevealed = ref(false)
 let longPressTimer = null
 let touchMoved = false
+
+const maskText = (text) => {
+  if (!text) return ''
+  const len = text.length
+  if (len <= 8) return '*'.repeat(len)
+  return text.substring(0, 4) + '*'.repeat(len - 8) + text.substring(len - 4)
+}
 
 const handleCopy = async () => {
   isCopying.value = true
@@ -75,6 +90,18 @@ const handleTouchMove = () => {
   if (longPressTimer) {
     clearTimeout(longPressTimer)
     longPressTimer = null
+  }
+}
+
+const handleMouseEnter = () => {
+  if (props.masked && !isMobile.value) {
+    isRevealed.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  if (props.masked) {
+    isRevealed.value = false
   }
 }
 </script>

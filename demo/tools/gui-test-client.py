@@ -429,29 +429,17 @@ class NextKeyGUI:
                                     item.config(show="*")
     
     def load_from_yaml(self):
-        """从config.yaml读取配置"""
-        config_path = filedialog.askopenfilename(
-            title="选择config.yaml文件",
-            filetypes=[("YAML files", "*.yaml"), ("All files", "*.*")]
+        """从config.yaml读取配置（已弃用）"""
+        messagebox.showinfo(
+            "提示", 
+            "加密密钥已改为项目级配置！\n\n"
+            "请按以下步骤获取密钥：\n"
+            "1. 登录管理后台\n"
+            "2. 进入项目管理页面\n"
+            "3. 查看项目详情，复制加密密钥\n"
+            "4. 将密钥粘贴到AES密钥输入框"
         )
-        
-        if not config_path:
-            return
-        
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
-            
-            aes_key = config.get('security', {}).get('aes_key', '')
-            if aes_key:
-                self.aes_key_var.set(aes_key)
-                self.log(f"已从 {config_path} 读取AES密钥", "success")
-                self.status_text.insert(tk.END, f"✓ AES密钥已加载\n✓ 密钥长度: {len(aes_key)}\n")
-            else:
-                messagebox.showwarning("警告", "config.yaml中未找到AES密钥")
-        except Exception as e:
-            messagebox.showerror("错误", f"读取配置文件失败: {e}")
-            self.log(f"读取配置失败: {e}", "error")
+        self.log("提示: 请从管理后台获取项目加密密钥", "info")
     
     def save_config(self):
         """保存配置"""

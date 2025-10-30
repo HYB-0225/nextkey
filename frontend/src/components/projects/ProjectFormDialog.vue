@@ -57,6 +57,20 @@
       <el-form-item label="描述">
         <el-input v-model="form.description" type="textarea" />
       </el-form-item>
+      <el-divider v-if="projectData" content-position="left">加密配置</el-divider>
+      <el-form-item v-if="projectData" label="加密方案">
+        <el-select v-model="form.encryption_scheme" disabled>
+          <el-option label="AES-256-GCM" value="aes-256-gcm" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="projectData" label="加密密钥">
+        <el-input v-model="form.encryption_key" readonly>
+          <template #append>
+            <el-button @click="copyKey">复制</el-button>
+          </template>
+        </el-input>
+        <div class="form-tip">客户端需要此密钥进行加密通信</div>
+      </el-form-item>
     </el-form>
     
       <template #footer>
@@ -71,6 +85,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { staggerFormItems } from '@/utils/animations'
+import { copyToClipboard } from '@/utils/copy'
 
 const { isMobile } = useResponsive()
 
@@ -155,6 +170,12 @@ const handleOpened = () => {
       staggerFormItems(formItems)
     }
   })
+}
+
+const copyKey = () => {
+  if (form.value.encryption_key) {
+    copyToClipboard(form.value.encryption_key, '加密密钥已复制')
+  }
 }
 </script>
 

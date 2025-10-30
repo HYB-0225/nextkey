@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/models"
 	"github.com/nextkey/nextkey/backend/pkg/config"
 	"golang.org/x/crypto/bcrypt"
@@ -49,7 +50,7 @@ func migrate() error {
 		log.Printf("Token表迁移警告: %v", err)
 	}
 
-	return DB.AutoMigrate(
+	if err := DB.AutoMigrate(
 		&models.Admin{},
 		&models.AdminToken{},
 		&models.AdminTokenBlacklist{},
@@ -59,7 +60,16 @@ func migrate() error {
 		&models.CloudVar{},
 		&models.Nonce{},
 		&models.UnbindRecord{},
-	)
+	); err != nil {
+		return err
+	}
+
+	// 迁移现有项目，为其生成加密密钥
+	if err := migrateProjectEncryption(); err != nil {
+		log.Printf("项目加密字段迁移警告: %v", err)
+	}
+
+	return nil
 }
 
 func migrateTokenCardID() error {
@@ -195,6 +205,26 @@ func hashPasswordBcrypt(password string) string {
 func hashPasswordSHA256(password string) string {
 	hash := sha256.Sum256([]byte(password))
 	return hex.EncodeToString(hash[:])
+}
+
+func migrateProjectEncryption() error {
+	var projects []models.Project
+	if err := DB.Find(&projects).Error; err != nil {
+		return err
+	}
+
+	for _, p := range projects {
+		if p.EncryptionKey == "" {
+			p.EncryptionScheme = "aes-256-gcm"
+			p.EncryptionKey = crypto.GenerateEncryptionKey()
+			if err := DB.Save(&p).Error; err != nil {
+				log.Printf("为项目 %s 生成加密密钥失败: %v", p.Name, err)
+			} else {
+				log.Printf("为项目 %s 生成加密密钥: %s", p.Name, p.EncryptionKey)
+			}
+		}
+	}
+	return nil
 }
 
 func cleanExpiredNonces() {

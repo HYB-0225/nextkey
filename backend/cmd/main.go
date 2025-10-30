@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/api"
-	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/middleware"
 	"github.com/nextkey/nextkey/backend/internal/service"
@@ -23,10 +22,6 @@ func main() {
 	checkConfigPermissions()
 
 	cfg := config.Load()
-
-	if err := crypto.SetKey(cfg.Security.AESKey); err != nil {
-		log.Fatalf("设置加密密钥失败: %v", err)
-	}
 
 	// 设置JWT密钥
 	middleware.SetJWTSecret(cfg.Security.JWTSecret)

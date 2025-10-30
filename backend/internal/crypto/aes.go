@@ -9,18 +9,23 @@ import (
 	"io"
 )
 
-var globalKey []byte
+type AESEncryptor struct {
+	key []byte
+}
 
-func SetKey(key string) error {
+func NewAESEncryptor(key string) (*AESEncryptor, error) {
 	keyBytes, err := decodeKey(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(keyBytes) != 32 {
-		return errors.New("AES key must be 32 bytes")
+		return nil, errors.New("AES key must be 32 bytes")
 	}
-	globalKey = keyBytes
-	return nil
+	return &AESEncryptor{key: keyBytes}, nil
+}
+
+func (e *AESEncryptor) Scheme() string {
+	return "aes-256-gcm"
 }
 
 func decodeKey(key string) ([]byte, error) {
@@ -34,12 +39,8 @@ func decodeKey(key string) ([]byte, error) {
 	return []byte(key), nil
 }
 
-func Encrypt(plaintext string) (string, error) {
-	if globalKey == nil {
-		return "", errors.New("encryption key not set")
-	}
-
-	block, err := aes.NewCipher(globalKey)
+func (e *AESEncryptor) Encrypt(plaintext string) (string, error) {
+	block, err := aes.NewCipher(e.key)
 	if err != nil {
 		return "", err
 	}
@@ -58,17 +59,13 @@ func Encrypt(plaintext string) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-func Decrypt(ciphertext string) (string, error) {
-	if globalKey == nil {
-		return "", errors.New("encryption key not set")
-	}
-
+func (e *AESEncryptor) Decrypt(ciphertext string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
 		return "", err
 	}
 
-	block, err := aes.NewCipher(globalKey)
+	block, err := aes.NewCipher(e.key)
 	if err != nil {
 		return "", err
 	}

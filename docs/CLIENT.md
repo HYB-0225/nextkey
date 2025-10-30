@@ -18,8 +18,7 @@
 ### 5分钟快速对接流程
 
 1. **获取配置信息**
-   - 从服务端 `config.yaml` 获取 `aes_key`
-   - 在管理后台创建项目，获取 `project_uuid`
+   - 在管理后台创建项目，获取 `project_uuid` 和 `encryption_key`
    - 生成测试卡密
 
 2. **安装依赖** (以Python为例)
@@ -34,7 +33,7 @@
    client = NextKeyClient(
        server_url="http://localhost:8080",
        project_uuid="your-project-uuid",
-       aes_key="your-aes-key-from-config"
+       aes_key="your-encryption-key-from-admin"
    )
    
    # 登录
@@ -54,34 +53,39 @@
 
 ## 密钥配置
 
-### AES密钥获取
+### 加密密钥获取
 
-AES加密密钥位于服务端 `config.yaml` 文件中：
+每个项目拥有独立的加密密钥。从管理后台获取项目的加密密钥：
 
-```yaml
-security:
-  aes_key: 632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037
+1. 登录管理后台
+2. 进入"项目管理"页面
+3. 创建或编辑项目时，可以看到"加密密钥"字段
+4. 点击复制按钮复制密钥
+
+**示例密钥格式**:
+```
+632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037
 ```
 
 ### 密钥格式说明
 
-**服务端格式**: 64字符十六进制字符串（HEX编码）
+**密钥格式**: 64字符十六进制字符串（HEX编码）
 
 **客户端使用**:
-- **方式1**: 直接使用前32字节
+- **方式1**: 直接使用前32字节（推荐）
   ```python
-  aes_key = "632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037"
-  key_bytes = aes_key[:32].encode()  # 取前32个字符转字节
+  encryption_key = "632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037"
+  key_bytes = encryption_key[:32].encode()  # 取前32个字符转字节
   ```
 
-- **方式2**: HEX解码为16字节 (不推荐，当前实现使用方式1)
+- **方式2**: HEX解码为32字节
   ```python
   import binascii
-  aes_key = "632005a33ebb7619c1efd3853c7109f1..."
-  key_bytes = binascii.unhexlify(aes_key)  # 32字节
+  encryption_key = "632005a33ebb7619c1efd3853c7109f1..."
+  key_bytes = binascii.unhexlify(encryption_key)  # 32字节
   ```
 
-**重要**: 根据服务端实现 (`backend/internal/crypto/aes.go:32`)，当密钥长度为64字符时，直接取前32字节作为AES密钥。
+**重要**: 每个项目使用独立的加密密钥，确保使用正确的密钥与对应项目通信。
 
 ### 安全存储建议
 
@@ -99,7 +103,7 @@ security:
 ```python
 # 示例：从环境变量读取
 import os
-aes_key = os.environ.get('NEXTKEY_AES_KEY')
+encryption_key = os.environ.get('NEXTKEY_ENCRYPTION_KEY')
 ```
 
 ---

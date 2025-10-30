@@ -26,7 +26,6 @@ type DatabaseConfig struct {
 }
 
 type SecurityConfig struct {
-	AESKey       string `yaml:"aes_key"`
 	JWTSecret    string `yaml:"jwt_secret"`
 	TokenExpire  int    `yaml:"token_expire"`
 	ReplayWindow int    `yaml:"replay_window"`
@@ -70,7 +69,6 @@ func generateDefault() *Config {
 			Path: "./nextkey.db",
 		},
 		Security: SecurityConfig{
-			AESKey:       generateRandomKey(32),
 			JWTSecret:    generateRandomKey(32),
 			TokenExpire:  3600,
 			ReplayWindow: 300,

@@ -74,7 +74,20 @@ func EncryptedSuccess(c *gin.Context, data interface{}) {
 		return
 	}
 
-	encryptedData, err := crypto.Encrypt(string(jsonData))
+	// 从上下文获取加密器
+	encryptorVal, exists := c.Get("encryptor")
+	if !exists {
+		Error(c, 500, "加密器未初始化")
+		return
+	}
+
+	encryptor, ok := encryptorVal.(crypto.Encryptor)
+	if !ok {
+		Error(c, 500, "加密器类型错误")
+		return
+	}
+
+	encryptedData, err := encryptor.Encrypt(string(jsonData))
 	if err != nil {
 		Error(c, 500, "加密失败")
 		return
@@ -107,7 +120,20 @@ func EncryptedError(c *gin.Context, code int, message string) {
 		return
 	}
 
-	encryptedData, err := crypto.Encrypt(string(jsonData))
+	// 从上下文获取加密器
+	encryptorVal, exists := c.Get("encryptor")
+	if !exists {
+		Error(c, 500, "加密器未初始化")
+		return
+	}
+
+	encryptor, ok := encryptorVal.(crypto.Encryptor)
+	if !ok {
+		Error(c, 500, "加密器类型错误")
+		return
+	}
+
+	encryptedData, err := encryptor.Encrypt(string(jsonData))
 	if err != nil {
 		Error(c, 500, "加密失败")
 		return
