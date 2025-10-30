@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/api"
@@ -56,14 +57,20 @@ func main() {
 			router.StaticFS("/assets", http.FS(assetsFS))
 		}
 
-		// SPA fallback: 所有未匹配路由返回 index.html
+		// SPA fallback: 只对请求 HTML 的请求返回 index.html
 		router.NoRoute(func(c *gin.Context) {
-			data, err := fs.ReadFile(distFS, "index.html")
-			if err != nil {
-				c.String(500, "无法读取前端文件")
+			// 只在浏览器请求页面时返回 index.html
+			if strings.Contains(c.Request.Header.Get("Accept"), "text/html") {
+				data, err := fs.ReadFile(distFS, "index.html")
+				if err != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+				c.Data(http.StatusOK, "text/html; charset=utf-8", data)
 				return
 			}
-			c.Data(200, "text/html; charset=utf-8", data)
+			// 其他资源请求返回 404
+			c.Status(http.StatusNotFound)
 		})
 	}
 
