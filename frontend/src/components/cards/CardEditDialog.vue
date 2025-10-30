@@ -10,20 +10,14 @@
       @opened="handleOpened"
     >
     <el-form :model="form" :label-width="isMobile ? '0px' : '120px'" :label-position="isMobile ? 'top' : 'right'">
-      <el-form-item label="卡密类型">
-        <el-select v-model="form.card_type" placeholder="请选择卡密类型" style="width: 100%;">
-          <el-option
-            v-for="type in CARD_TYPES"
-            :key="type.value"
-            :label="type.label"
-            :value="type.value"
-          />
-        </el-select>
-      </el-form-item>
-      
       <!-- 未激活卡：编辑有效时长 -->
-      <el-form-item v-if="!form.activated && form.card_type !== 'permanent'" label="有效时长">
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <el-form-item v-if="!form.activated" label="有效时长">
+        <el-radio-group v-model="form.is_permanent" style="margin-bottom: 10px;">
+          <el-radio :label="false">限时卡</el-radio>
+          <el-radio :label="true">永久卡</el-radio>
+        </el-radio-group>
+        
+        <div v-if="!form.is_permanent" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
           <div style="display: flex; gap: 10px; align-items: center;">
             <el-input-number v-model="form.duration_value" :min="1" style="width: 150px;" />
             <el-select v-model="form.duration_unit" style="width: 100px;">
@@ -39,7 +33,12 @@
             {{ durationPreview }}
           </div>
         </div>
-        <div style="color: #999; font-size: 12px; margin-top: 5px;">
+        
+        <div v-else style="color: #999; font-size: 12px;">
+          永久有效，无时间限制
+        </div>
+        
+        <div v-if="!form.is_permanent" style="color: #999; font-size: 12px; margin-top: 5px;">
           修改的是卡密的基础时长
         </div>
       </el-form-item>
@@ -59,10 +58,25 @@
         </div>
       </el-form-item>
       
-      <el-form-item v-if="form.card_type === 'permanent'">
+      <el-form-item v-if="form.activated && form.card_type === 'permanent'">
         <el-alert type="info" :closable="false" show-icon>
           永久卡无需设置时长
         </el-alert>
+      </el-form-item>
+      
+      <el-form-item label="卡密类型">
+        <el-select v-model="form.card_type" placeholder="根据时长自动推断" style="width: 100%;" :disabled="!form.activated">
+          <el-option
+            v-for="type in CARD_TYPES"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
+          />
+        </el-select>
+        <div style="color: #999; font-size: 12px; margin-top: 5px;">
+          <span v-if="!form.activated">系统根据有效时长自动设置</span>
+          <span v-else>已激活卡密可手动修改类型</span>
+        </div>
       </el-form-item>
       
       <el-form-item label="设备码上限">
@@ -170,6 +184,7 @@ const dialogVisible = ref(false)
 const form = ref({
   id: null,
   activated: false,
+  is_permanent: false,
   duration_value: 30,
   duration_unit: 'day',
   expire_time: null,
@@ -187,7 +202,7 @@ const newIP = ref('')
 
 // 实时预览
 const durationPreview = computed(() => {
-  if (form.value.activated || form.value.card_type === 'permanent') {
+  if (form.value.activated || form.value.is_permanent) {
     return null
   }
   const seconds = unitValueToSeconds(form.value.duration_value, form.value.duration_unit)
@@ -203,7 +218,8 @@ watch(() => props.cardData, (data) => {
     const { value, unit } = secondsToUnitValue(data.duration || 0)
     form.value = {
       ...data,
-      duration_value: value,
+      is_permanent: data.duration === 0 || data.card_type === 'permanent',
+      duration_value: value || 30,
       duration_unit: unit,
       expire_time: data.expire_at ? new Date(data.expire_at) : null
     }
@@ -214,27 +230,28 @@ watch(dialogVisible, (val) => {
   emit('update:visible', val)
 })
 
-// card_type 自动同步
-watch([() => form.value.duration_value, () => form.value.duration_unit], () => {
-  if (form.value.activated || form.value.card_type === 'permanent') {
+// card_type 自动同步 - 根据时长范围推断 (仅未激活卡)
+watch([() => form.value.is_permanent, () => form.value.duration_value, () => form.value.duration_unit], () => {
+  if (form.value.activated) {
+    return
+  }
+  
+  if (form.value.is_permanent) {
+    form.value.card_type = 'permanent'
     return
   }
   
   const seconds = unitValueToSeconds(form.value.duration_value, form.value.duration_unit)
   
-  const rules = [
-    { seconds: 0, type: 'permanent' },
-    { seconds: 604800, type: 'trial' },      // 7天
-    { seconds: 2592000, type: 'month' },     // 30天
-    { seconds: 7776000, type: 'quarter' },   // 90天
-    { seconds: 31536000, type: 'year' }      // 365天
-  ]
-  
-  for (const rule of rules) {
-    if (seconds === rule.seconds) {
-      form.value.card_type = rule.type
-      break
-    }
+  // 范围推断逻辑
+  if (seconds < 604800) {                  // <7天
+    form.value.card_type = 'trial'
+  } else if (seconds < 5184000) {          // 7天-60天
+    form.value.card_type = 'month'
+  } else if (seconds < 15552000) {         // 60天-180天
+    form.value.card_type = 'quarter'
+  } else {                                 // ≥180天
+    form.value.card_type = 'year'
   }
 })
 
