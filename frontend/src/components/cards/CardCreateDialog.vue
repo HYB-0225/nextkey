@@ -45,16 +45,21 @@
       </el-form-item>
       
       <el-form-item label="有效时长" v-if="form.card_type !== 'permanent'">
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <el-input-number v-model="form.duration_value" :min="1" style="width: 150px;" />
-          <el-select v-model="form.duration_unit" style="width: 100px;">
-            <el-option label="秒" value="second" />
-            <el-option label="天" value="day" />
-            <el-option label="周" value="week" />
-            <el-option label="月" value="month" />
-            <el-option label="季" value="quarter" />
-            <el-option label="年" value="year" />
-          </el-select>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <el-input-number v-model="form.duration_value" :min="1" style="width: 150px;" />
+            <el-select v-model="form.duration_unit" style="width: 100px;">
+              <el-option label="秒" value="second" />
+              <el-option label="天" value="day" />
+              <el-option label="周" value="week" />
+              <el-option label="月" value="month" />
+              <el-option label="季" value="quarter" />
+              <el-option label="年" value="year" />
+            </el-select>
+          </div>
+          <div v-if="durationPreview" style="color: #999; font-size: 12px;">
+            {{ durationPreview }}
+          </div>
         </div>
       </el-form-item>
       
@@ -88,12 +93,22 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { staggerFormItems } from '@/utils/animations'
 import { CARD_TYPES } from '@/constants/cardTypes'
+import { unitValueToSeconds } from '@/composables/useDuration'
 
 const { isMobile } = useResponsive()
+
+// 实时预览
+const durationPreview = computed(() => {
+  if (form.value.card_type === 'permanent') {
+    return null
+  }
+  const seconds = unitValueToSeconds(form.value.duration_value, form.value.duration_unit)
+  return `${seconds.toLocaleString()}秒`
+})
 
 const props = defineProps({
   visible: {
@@ -129,6 +144,30 @@ watch(() => props.visible, (val) => {
 
 watch(dialogVisible, (val) => {
   emit('update:visible', val)
+})
+
+// card_type 自动同步
+watch([() => form.value.duration_value, () => form.value.duration_unit], () => {
+  if (form.value.card_type === 'permanent') {
+    return
+  }
+  
+  const seconds = unitValueToSeconds(form.value.duration_value, form.value.duration_unit)
+  
+  const rules = [
+    { seconds: 0, type: 'permanent' },
+    { seconds: 604800, type: 'trial' },      // 7天
+    { seconds: 2592000, type: 'month' },     // 30天
+    { seconds: 7776000, type: 'quarter' },   // 90天
+    { seconds: 31536000, type: 'year' }      // 365天
+  ]
+  
+  for (const rule of rules) {
+    if (seconds === rule.seconds) {
+      form.value.card_type = rule.type
+      break
+    }
+  }
 })
 
 const resetForm = () => {

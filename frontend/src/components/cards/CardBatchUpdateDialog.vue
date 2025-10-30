@@ -22,16 +22,26 @@
         <el-checkbox v-model="form.update_duration" style="margin-bottom: 10px;">
           修改时长
         </el-checkbox>
-        <div v-if="form.update_duration" style="display: flex; gap: 10px; align-items: center;">
-          <el-input-number v-model="form.duration_value" :min="form.card_type === 'permanent' ? 0 : 1" style="width: 150px;" />
-          <el-select v-model="form.duration_unit" style="width: 100px;">
-            <el-option label="秒" value="second" />
-            <el-option label="天" value="day" />
-            <el-option label="周" value="week" />
-            <el-option label="月" value="month" />
-            <el-option label="季" value="quarter" />
-            <el-option label="年" value="year" />
-          </el-select>
+        <div v-if="form.update_duration">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 5px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <el-input-number v-model="form.duration_value" :min="form.card_type === 'permanent' ? 0 : 1" style="width: 150px;" />
+              <el-select v-model="form.duration_unit" style="width: 100px;">
+                <el-option label="秒" value="second" />
+                <el-option label="天" value="day" />
+                <el-option label="周" value="week" />
+                <el-option label="月" value="month" />
+                <el-option label="季" value="quarter" />
+                <el-option label="年" value="year" />
+              </el-select>
+            </div>
+            <div v-if="durationPreview" style="color: #999; font-size: 12px;">
+              {{ durationPreview }}
+            </div>
+          </div>
+          <el-alert type="warning" :closable="false" show-icon style="margin-top: 5px;">
+            批量修改将重置所有已激活卡密的到期时间
+          </el-alert>
         </div>
       </el-form-item>
       
@@ -71,11 +81,21 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { CARD_TYPES } from '@/constants/cardTypes'
+import { unitValueToSeconds } from '@/composables/useDuration'
 
 const { isMobile } = useResponsive()
+
+// 实时预览
+const durationPreview = computed(() => {
+  if (!form.value.update_duration || form.value.card_type === 'permanent') {
+    return null
+  }
+  const seconds = unitValueToSeconds(form.value.duration_value, form.value.duration_unit)
+  return `${seconds.toLocaleString()}秒`
+})
 
 const props = defineProps({
   visible: {

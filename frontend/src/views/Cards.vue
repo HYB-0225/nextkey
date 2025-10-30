@@ -254,13 +254,7 @@ const handleEdit = (row) => {
 
 const handleEditSave = async (formData) => {
   try {
-    // 永久卡自动设置duration为0
-    const duration = formData.card_type === 'permanent' 
-      ? 0 
-      : unitValueToSeconds(formData.duration_value, formData.duration_unit)
-    
-    await updateCard(formData.id, {
-      duration: duration,
+    const updateData = {
       card_type: formData.card_type,
       max_hwid: formData.max_hwid,
       max_ip: formData.max_ip,
@@ -268,7 +262,20 @@ const handleEditSave = async (formData) => {
       custom_data: formData.custom_data,
       hwid_list: formData.hwid_list,
       ip_list: formData.ip_list
-    })
+    }
+    
+    // 已激活卡：发送到期时间
+    if (formData.activated && formData.card_type !== 'permanent') {
+      updateData.expire_at = formData.expire_time
+    } else {
+      // 未激活卡：发送有效时长
+      const duration = formData.card_type === 'permanent' 
+        ? 0 
+        : unitValueToSeconds(formData.duration_value, formData.duration_unit)
+      updateData.duration = duration
+    }
+    
+    await updateCard(formData.id, updateData)
     ElMessage.success('保存成功')
     editDialogVisible.value = false
     loadCards()

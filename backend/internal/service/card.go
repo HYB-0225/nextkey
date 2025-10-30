@@ -40,6 +40,7 @@ type CreateCardRequest struct {
 
 type UpdateCardRequest struct {
 	Duration   *int                `json:"duration"`
+	ExpireAt   *time.Time          `json:"expire_at"`
 	Note       *string             `json:"note"`
 	CardType   *string             `json:"card_type"`
 	MaxHWID    *int                `json:"max_hwid"`
@@ -241,7 +242,20 @@ func (s *CardService) Update(id uint, req *UpdateCardRequest) (*models.Card, err
 		return nil, errors.New("卡密不存在")
 	}
 
-	if req.Duration != nil {
+	// 优先处理 expire_at（直接修改到期时间）
+	if req.ExpireAt != nil && card.Activated && card.ActivatedAt != nil {
+		card.ExpireAt = req.ExpireAt
+		// 反算 duration
+		if req.ExpireAt != nil {
+			duration := int(req.ExpireAt.Sub(*card.ActivatedAt).Seconds())
+			if duration < 0 {
+				duration = 0
+			}
+			card.Duration = duration
+		} else {
+			card.Duration = 0
+		}
+	} else if req.Duration != nil {
 		card.Duration = *req.Duration
 		// 如果卡密已激活，从激活时间重新计算到期时间
 		if card.Activated && card.ActivatedAt != nil {
