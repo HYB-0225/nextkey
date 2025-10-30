@@ -198,7 +198,7 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, in
 	if filter.Expired == "true" {
 		query = query.Where("activated = ? AND frozen = ? AND expire_at IS NOT NULL AND expire_at < ?", true, false, time.Now())
 	} else if filter.Expired == "false" {
-		query = query.Where("(activated = ? OR expire_at IS NULL OR expire_at >= ?)", false, time.Now())
+		query = query.Where("(activated = ? OR (activated = ? AND (expire_at IS NULL OR expire_at >= ?)))", false, true, time.Now())
 	}
 
 	if filter.StartTime != "" {
