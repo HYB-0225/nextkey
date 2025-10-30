@@ -18,7 +18,7 @@
         </el-select>
       </el-form-item>
       
-      <el-form-item label="有效时长" v-if="form.card_type !== 'permanent' || !form.update_card_type">
+      <el-form-item label="有效时长" v-if="!form.update_card_type || form.card_type !== 'permanent'">
         <el-checkbox v-model="form.update_duration" style="margin-bottom: 10px;">
           修改时长
         </el-checkbox>
