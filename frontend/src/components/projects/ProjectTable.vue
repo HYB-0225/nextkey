@@ -10,7 +10,13 @@
     >
       <el-table-column type="selection" width="55" />
       <el-table-column prop="name" label="项目名称" min-width="120" />
-      <el-table-column prop="uuid" label="项目UUID" min-width="280" show-overflow-tooltip />
+      <el-table-column label="项目UUID" min-width="280" show-overflow-tooltip>
+        <template #default="{ row }">
+          <CopyableText :text="row.uuid" success-message="UUID已复制">
+            {{ row.uuid }}
+          </CopyableText>
+        </template>
+      </el-table-column>
       <el-table-column prop="mode" label="模式" width="100">
         <template #default="{ row }">
           <el-tag :type="row.mode === 'paid' ? 'success' : 'info'">
@@ -51,6 +57,7 @@
 import { ref } from 'vue'
 import { Edit, Ticket, Cloudy, Delete } from '@element-plus/icons-vue'
 import ActionButtons from '@/components/common/ActionButtons.vue'
+import CopyableText from '@/components/common/CopyableText.vue'
 import ProjectCardList from './ProjectCardList.vue'
 import { useResponsive } from '@/composables/useResponsive'
 

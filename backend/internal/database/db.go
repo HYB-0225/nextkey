@@ -58,6 +58,7 @@ func migrate() error {
 		&models.Token{},
 		&models.CloudVar{},
 		&models.Nonce{},
+		&models.UnbindRecord{},
 	)
 }
 

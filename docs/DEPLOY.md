@@ -77,6 +77,25 @@ admin:
 3. **欠费管理**: 欠费用户冻结，续费后解冻
 4. **批量管理**: 批量冻结/解冻多个卡密
 
+### 项目表（Project）
+
+解绑相关配置字段：
+
+- `enable_unbind`: 是否启用解绑功能（默认false）
+- `unbind_verify_hwid`: 解绑时是否验证HWID（默认true）
+- `unbind_deduct_time`: 解绑扣时（秒，默认0表示不扣时）
+- `unbind_cooldown`: 解绑冷却时间（秒，默认86400/24小时）
+
+### 解绑记录表（UnbindRecord）
+
+记录所有解绑操作历史：
+
+- `id`: 主键
+- `card_id`: 卡密ID
+- `hwid`: 解绑的设备码
+- `unbind_at`: 解绑时间
+- `deducted_time`: 本次解绑扣除的时间（秒）
+
 ## 生产环境部署
 
 ### 使用 systemd (Linux)

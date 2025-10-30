@@ -129,6 +129,14 @@ public:
     ProjectInfo getProjectInfo();
     
     /**
+     * 解绑HWID
+     * @param card_key 卡密
+     * @param hwid 要解绑的设备码
+     * @throws NextKeyException 解绑失败时抛出异常
+     */
+    void unbindHWID(const std::string& card_key, const std::string& hwid);
+    
+    /**
      * 启动自动心跳
      * @param interval 心跳间隔（秒）
      * @param on_error 错误回调函数（可选）

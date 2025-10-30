@@ -15,27 +15,35 @@ func NewProjectService() *ProjectService {
 }
 
 type CreateProjectRequest struct {
-	Name        string `json:"name"`
-	Mode        string `json:"mode"`
-	EnableHWID  bool   `json:"enable_hwid"`
-	EnableIP    bool   `json:"enable_ip"`
-	Version     string `json:"version"`
-	UpdateURL   string `json:"update_url"`
-	TokenExpire int    `json:"token_expire"`
-	Description string `json:"description"`
+	Name             string `json:"name"`
+	Mode             string `json:"mode"`
+	EnableHWID       bool   `json:"enable_hwid"`
+	EnableIP         bool   `json:"enable_ip"`
+	Version          string `json:"version"`
+	UpdateURL        string `json:"update_url"`
+	TokenExpire      int    `json:"token_expire"`
+	Description      string `json:"description"`
+	EnableUnbind     bool   `json:"enable_unbind"`
+	UnbindVerifyHWID bool   `json:"unbind_verify_hwid"`
+	UnbindDeductTime int    `json:"unbind_deduct_time"`
+	UnbindCooldown   int    `json:"unbind_cooldown"`
 }
 
 func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, error) {
 	project := &models.Project{
-		UUID:        uuid.New().String(),
-		Name:        req.Name,
-		Mode:        req.Mode,
-		EnableHWID:  req.EnableHWID,
-		EnableIP:    req.EnableIP,
-		Version:     req.Version,
-		UpdateURL:   req.UpdateURL,
-		TokenExpire: req.TokenExpire,
-		Description: req.Description,
+		UUID:             uuid.New().String(),
+		Name:             req.Name,
+		Mode:             req.Mode,
+		EnableHWID:       req.EnableHWID,
+		EnableIP:         req.EnableIP,
+		Version:          req.Version,
+		UpdateURL:        req.UpdateURL,
+		TokenExpire:      req.TokenExpire,
+		Description:      req.Description,
+		EnableUnbind:     req.EnableUnbind,
+		UnbindVerifyHWID: req.UnbindVerifyHWID,
+		UnbindDeductTime: req.UnbindDeductTime,
+		UnbindCooldown:   req.UnbindCooldown,
 	}
 
 	if err := database.DB.Create(project).Error; err != nil {
@@ -83,6 +91,10 @@ func (s *ProjectService) Update(id uint, req *CreateProjectRequest) (*models.Pro
 	project.UpdateURL = req.UpdateURL
 	project.TokenExpire = req.TokenExpire
 	project.Description = req.Description
+	project.EnableUnbind = req.EnableUnbind
+	project.UnbindVerifyHWID = req.UnbindVerifyHWID
+	project.UnbindDeductTime = req.UnbindDeductTime
+	project.UnbindCooldown = req.UnbindCooldown
 
 	if err := database.DB.Save(&project).Error; err != nil {
 		return nil, err
@@ -111,15 +123,19 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 
 	for _, req := range reqs {
 		project := &models.Project{
-			UUID:        uuid.New().String(),
-			Name:        req.Name,
-			Mode:        req.Mode,
-			EnableHWID:  req.EnableHWID,
-			EnableIP:    req.EnableIP,
-			Version:     req.Version,
-			UpdateURL:   req.UpdateURL,
-			TokenExpire: req.TokenExpire,
-			Description: req.Description,
+			UUID:             uuid.New().String(),
+			Name:             req.Name,
+			Mode:             req.Mode,
+			EnableHWID:       req.EnableHWID,
+			EnableIP:         req.EnableIP,
+			Version:          req.Version,
+			UpdateURL:        req.UpdateURL,
+			TokenExpire:      req.TokenExpire,
+			Description:      req.Description,
+			EnableUnbind:     req.EnableUnbind,
+			UnbindVerifyHWID: req.UnbindVerifyHWID,
+			UnbindDeductTime: req.UnbindDeductTime,
+			UnbindCooldown:   req.UnbindCooldown,
 		}
 
 		if err := tx.Create(project).Error; err != nil {

@@ -367,6 +367,7 @@ Authorization: Bearer {token}
 - `/api/cloud-var/:key` - 获取云变量
 - `/api/card/custom-data` - 更新专属信息
 - `/api/project/info` - 获取项目信息
+- `/api/card/unbind` - 解绑HWID
 
 **示例**:
 ```python
@@ -405,6 +406,79 @@ threading.Thread(target=heartbeat_loop, args=(client,), daemon=True).start()
 - 心跳间隔应小于Token有效期
 - 建议30-60秒发送一次
 - 心跳失败应尝试重新登录
+
+### HWID解绑流程
+
+**功能说明**:
+- 允许用户主动解绑已绑定的HWID
+- 需要项目启用解绑功能（管理后台配置）
+- 受冷却时间限制，防止频繁解绑
+- 可配置解绑扣时作为惩罚机制
+
+**解绑流程**:
+```
+客户端                                服务端
+  │                                    │
+  │  1. 准备解绑数据                     │
+  │  {                                 │
+  │    project_uuid,                   │
+  │    card_key,                       │
+  │    hwid (要解绑的设备码)             │
+  │  }                                 │
+  │                                    │
+  │  2. POST /api/card/unbind          │
+  │  (需要Token认证)                    │
+  │ ──────────────────────────────>    │
+  │                                    │
+  │                                    │  3. 验证项目是否启用解绑
+  │                                    │  4. 检查冷却时间
+  │                                    │  5. 验证HWID是否已绑定
+  │                                    │  6. 从列表中移除HWID
+  │                                    │  7. 扣除时间（如配置）
+  │                                    │  8. 记录解绑历史
+  │                                    │
+  │  9. 返回解绑结果                     │
+  │ <────────────────────────────────  │
+  │  {                                 │
+  │    code: 0,                        │
+  │    message: "解绑成功"              │
+  │  }                                 │
+```
+
+**Python示例**:
+```python
+def unbind_hwid(client, card_key, hwid):
+    """解绑HWID"""
+    data = {
+        "project_uuid": client.project_uuid,
+        "card_key": card_key,
+        "hwid": hwid
+    }
+    result, _, _ = client.make_encrypted_request("/api/card/unbind", data)
+    return result
+
+# 使用示例
+try:
+    result = unbind_hwid(client, "your-card-key", "device-hwid-001")
+    if result['code'] == 0:
+        print("解绑成功！现在可以在其他设备上使用此卡密")
+    else:
+        print(f"解绑失败: {result['message']}")
+except Exception as e:
+    print(f"解绑异常: {e}")
+```
+
+**重要提示**:
+- 解绑需要先登录获取Token
+- 默认冷却时间为24小时，请勿频繁解绑
+- 如果项目配置了解绑扣时，会减少卡密剩余时间
+- 解绑后该HWID可以重新绑定
+
+**常见错误**:
+- `"该项目未启用解绑功能"` - 联系管理员在项目配置中启用
+- `"解绑冷却中，请等待 XXX 秒后再试"` - 需要等待冷却时间
+- `"该设备未绑定到此卡密"` - 检查HWID是否正确
+- `"卡密已冻结"` - 卡密被冻结，无法解绑
 
 ### 错误处理最佳实践
 
@@ -484,6 +558,14 @@ int main() {
         auto value = client->getCloudVar("notice");
         std::cout << "Notice: " << value << "\n";
         
+        // 解绑HWID（可选）
+        try {
+            client->unbindHWID("card-key", "old-device-hwid");
+            std::cout << "HWID解绑成功\n";
+        } catch (const NextKeyException& e) {
+            std::cerr << "解绑失败: " << e.what() << "\n";
+        }
+        
     } catch (const NextKeyException& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
@@ -534,6 +616,12 @@ fn main() -> anyhow::Result<()> {
     
     let value = client.get_cloud_var("notice")?;
     println!("Notice: {}", value);
+    
+    // 解绑HWID
+    let unbind_result = client.unbind_hwid("card-key", "old-device-hwid")?;
+    if unbind_result.code == 0 {
+        println!("HWID解绑成功");
+    }
     
     Ok(())
 }

@@ -24,7 +24,11 @@
       <div class="card-body">
         <div class="info-row">
           <span class="label">UUID</span>
-          <span class="value text-ellipsis">{{ project.uuid }}</span>
+          <span class="value text-ellipsis">
+            <CopyableText :text="project.uuid" success-message="UUID已复制">
+              {{ project.uuid }}
+            </CopyableText>
+          </span>
         </div>
         <div class="info-row">
           <span class="label">版本</span>
@@ -73,6 +77,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { Edit, Ticket, Cloudy, Delete, Loading, Box } from '@element-plus/icons-vue'
+import CopyableText from '@/components/common/CopyableText.vue'
 import { staggerScaleIn } from '@/utils/animations'
 
 const props = defineProps({

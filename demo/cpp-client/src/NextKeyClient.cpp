@@ -206,6 +206,17 @@ ProjectInfo NextKeyClient::getProjectInfo() {
     return info;
 }
 
+// 解绑HWID
+void NextKeyClient::unbindHWID(const std::string& card_key, const std::string& hwid) {
+    int32_t result = ::nextkey_unbind_hwid(
+        reinterpret_cast<::NextKeyClient*>(client_handle_),
+        card_key.c_str(),
+        hwid.c_str()
+    );
+    
+    throw_if_error("解绑HWID", result);
+}
+
 // 心跳循环
 void NextKeyClient::heartbeat_loop(std::chrono::seconds interval) {
     while (heartbeat_running_) {

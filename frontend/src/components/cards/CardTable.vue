@@ -4,7 +4,13 @@
     <template v-if="!isMobile">
       <el-table :data="cards" style="width: 100%;" v-loading="loading" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="card_key" label="卡密" min-width="200" show-overflow-tooltip />
+        <el-table-column label="卡密" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <CopyableText :text="row.card_key" success-message="卡密已复制">
+              {{ row.card_key }}
+            </CopyableText>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
             <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -75,6 +81,7 @@ import { ref } from 'vue'
 import { Edit, View, Delete, Lock, Unlock } from '@element-plus/icons-vue'
 import { formatDuration } from '@/composables/useDuration'
 import ActionButtons from '@/components/common/ActionButtons.vue'
+import CopyableText from '@/components/common/CopyableText.vue'
 import CardListMobile from './CardListMobile.vue'
 import { useResponsive } from '@/composables/useResponsive'
 

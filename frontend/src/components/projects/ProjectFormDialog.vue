@@ -36,6 +36,24 @@
       <el-form-item label="启用IP验证">
         <el-switch v-model="form.enable_ip" />
       </el-form-item>
+      <el-divider content-position="left">解绑配置</el-divider>
+      <el-form-item label="启用解绑">
+        <el-switch v-model="form.enable_unbind" />
+      </el-form-item>
+      <el-form-item label="验证HWID" v-if="form.enable_unbind">
+        <el-switch v-model="form.unbind_verify_hwid" />
+        <div class="form-tip">关闭后不验证HWID是否已绑定，但仍需传入HWID以从列表中移除</div>
+      </el-form-item>
+      <el-form-item label="解绑扣时" v-if="form.enable_unbind">
+        <el-input v-model.number="form.unbind_deduct_time" type="number" placeholder="0表示不扣时">
+          <template #append>秒</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="解绑冷却" v-if="form.enable_unbind">
+        <el-input v-model.number="form.unbind_cooldown" type="number">
+          <template #append>秒</template>
+        </el-input>
+      </el-form-item>
       <el-form-item label="描述">
         <el-input v-model="form.description" type="textarea" />
       </el-form-item>
@@ -83,6 +101,10 @@ const form = ref({
   token_expire: 3600,
   enable_hwid: true,
   enable_ip: true,
+  enable_unbind: false,
+  unbind_verify_hwid: true,
+  unbind_deduct_time: 0,
+  unbind_cooldown: 86400,
   description: ''
 })
 
@@ -110,6 +132,10 @@ const resetForm = () => {
     token_expire: 3600,
     enable_hwid: true,
     enable_ip: true,
+    enable_unbind: false,
+    unbind_verify_hwid: true,
+    unbind_deduct_time: 0,
+    unbind_cooldown: 86400,
     description: ''
   }
 }
@@ -140,6 +166,17 @@ const handleOpened = () => {
 
 :deep(.el-switch) {
   --el-switch-on-color: #667eea;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+:deep(.el-divider) {
+  margin: 24px 0 16px 0;
 }
 </style>
 

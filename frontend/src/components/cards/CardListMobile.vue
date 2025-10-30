@@ -13,7 +13,9 @@
             @click.stop
             class="card-checkbox"
           />
-          <span class="card-key">{{ card.card_key }}</span>
+          <CopyableText :text="card.card_key" success-message="卡密已复制" class="card-key-wrapper">
+            <span class="card-key">{{ card.card_key }}</span>
+          </CopyableText>
         </div>
         <el-tag :type="card.activated ? 'success' : 'info'" size="small">
           {{ card.activated ? '已激活' : '未激活' }}
@@ -84,6 +86,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { Edit, View, Delete, Loading, Ticket } from '@element-plus/icons-vue'
+import CopyableText from '@/components/common/CopyableText.vue'
 import { formatDuration } from '@/composables/useDuration'
 import { staggerScaleIn } from '@/utils/animations'
 
@@ -202,14 +205,19 @@ const animateCards = () => {
   flex-shrink: 0;
 }
 
+.card-key-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .card-key {
   font-family: 'Courier New', monospace;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .card-body {
@@ -243,6 +251,7 @@ const animateCards = () => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 

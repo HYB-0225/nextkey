@@ -164,6 +164,16 @@ class NextKeyClient:
         """获取项目信息"""
         result, _, _ = self.make_encrypted_request("/api/project/info", {}, method="GET")
         return result
+    
+    def unbind_hwid(self, card_key, hwid):
+        """解绑HWID"""
+        data = {
+            "project_uuid": self.project_uuid,
+            "card_key": card_key,
+            "hwid": hwid
+        }
+        result, _, _ = self.make_encrypted_request("/api/card/unbind", data)
+        return result
 
 
 class NextKeyGUI:
@@ -316,6 +326,48 @@ class NextKeyGUI:
         project_frame.pack(fill=tk.X, padx=10, pady=5)
         
         ttk.Button(project_frame, text="获取项目信息", command=self.get_project_info).pack()
+        
+        # 解绑HWID
+        unbind_frame = ttk.LabelFrame(parent, text="解绑HWID测试", padding=10)
+        unbind_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # 卡密输入
+        row1 = ttk.Frame(unbind_frame)
+        row1.pack(fill=tk.X, pady=5)
+        ttk.Label(row1, text="卡密:", width=12).pack(side=tk.LEFT, padx=5)
+        self.unbind_card_key_var = tk.StringVar()
+        ttk.Entry(row1, textvariable=self.unbind_card_key_var, width=30).pack(side=tk.LEFT, padx=5)
+        ttk.Button(row1, text="使用登录卡密", command=self.use_login_card_key).pack(side=tk.LEFT, padx=5)
+        
+        # 当前HWID显示
+        row2 = ttk.Frame(unbind_frame)
+        row2.pack(fill=tk.X, pady=5)
+        ttk.Label(row2, text="当前HWID:", width=12).pack(side=tk.LEFT, padx=5)
+        self.current_hwid_display = tk.StringVar(value="未设置")
+        ttk.Label(row2, textvariable=self.current_hwid_display, foreground="blue", width=30).pack(side=tk.LEFT, padx=5)
+        
+        # HWID输入
+        row3 = ttk.Frame(unbind_frame)
+        row3.pack(fill=tk.X, pady=5)
+        ttk.Label(row3, text="HWID:", width=12).pack(side=tk.LEFT, padx=5)
+        self.unbind_hwid_var = tk.StringVar()
+        ttk.Entry(row3, textvariable=self.unbind_hwid_var, width=30).pack(side=tk.LEFT, padx=5)
+        ttk.Button(row3, text="使用登录HWID", command=self.use_login_hwid).pack(side=tk.LEFT, padx=5)
+        
+        # 快捷操作按钮
+        row4 = ttk.Frame(unbind_frame)
+        row4.pack(fill=tk.X, pady=10)
+        ttk.Button(row4, text="更改HWID", command=self.change_hwid, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Button(row4, text="恢复原HWID", command=self.restore_hwid, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Button(row4, text="解绑HWID", command=self.do_unbind, width=15).pack(side=tk.LEFT, padx=5)
+        
+        # 解绑历史记录
+        ttk.Label(unbind_frame, text="解绑操作历史:").pack(anchor=tk.W, pady=(10,5))
+        self.unbind_history_text = scrolledtext.ScrolledText(unbind_frame, height=6, wrap=tk.WORD)
+        self.unbind_history_text.pack(fill=tk.BOTH, expand=True)
+        
+        # 保存原始HWID
+        self.original_hwid = ""
     
     def setup_log_tab(self, parent):
         """日志标签页"""
@@ -637,6 +689,122 @@ class NextKeyGUI:
         except Exception as e:
             self.log(f"获取项目信息异常: {e}", "error")
             messagebox.showerror("错误", f"获取异常: {e}")
+    
+    def use_login_card_key(self):
+        """使用登录页面的卡密"""
+        card_key = self.card_key_var.get()
+        if card_key:
+            self.unbind_card_key_var.set(card_key)
+            self.log(f"已复制登录卡密: {card_key}", "info")
+        else:
+            messagebox.showwarning("警告", "登录页面未设置卡密")
+    
+    def use_login_hwid(self):
+        """使用登录页面的HWID"""
+        hwid = self.hwid_var.get()
+        if hwid:
+            self.unbind_hwid_var.set(hwid)
+            self.current_hwid_display.set(hwid)
+            if not self.original_hwid:
+                self.original_hwid = hwid
+            self.log(f"已复制登录HWID: {hwid}", "info")
+        else:
+            messagebox.showwarning("警告", "登录页面未设置HWID")
+    
+    def change_hwid(self):
+        """更改HWID（生成新的测试HWID）"""
+        current_hwid = self.unbind_hwid_var.get()
+        if not current_hwid:
+            messagebox.showwarning("警告", "请先设置当前HWID")
+            return
+        
+        # 保存原始HWID
+        if not self.original_hwid:
+            self.original_hwid = current_hwid
+        
+        # 生成新HWID
+        timestamp = datetime.now().strftime("%H%M%S")
+        new_hwid = f"{current_hwid}-changed-{timestamp}"
+        
+        self.unbind_hwid_var.set(new_hwid)
+        self.current_hwid_display.set(new_hwid)
+        
+        self.log(f"HWID已更改: {current_hwid} -> {new_hwid}", "info")
+        self.unbind_history_text.insert(tk.END, f"[{datetime.now().strftime('%H:%M:%S')}] HWID更改: {current_hwid} -> {new_hwid}\n")
+        self.unbind_history_text.see(tk.END)
+        
+        messagebox.showinfo("成功", f"HWID已更改为:\n{new_hwid}\n\n提示：如需测试解绑，请先用新HWID登录，然后解绑旧HWID")
+    
+    def restore_hwid(self):
+        """恢复原始HWID"""
+        if not self.original_hwid:
+            messagebox.showwarning("警告", "未保存原始HWID")
+            return
+        
+        current = self.unbind_hwid_var.get()
+        self.unbind_hwid_var.set(self.original_hwid)
+        self.current_hwid_display.set(self.original_hwid)
+        
+        self.log(f"HWID已恢复: {current} -> {self.original_hwid}", "info")
+        self.unbind_history_text.insert(tk.END, f"[{datetime.now().strftime('%H:%M:%S')}] HWID恢复: {current} -> {self.original_hwid}\n")
+        self.unbind_history_text.see(tk.END)
+        
+        messagebox.showinfo("成功", f"HWID已恢复为:\n{self.original_hwid}")
+    
+    def do_unbind(self):
+        """执行解绑"""
+        if not self.client or not self.client.token:
+            messagebox.showwarning("警告", "请先登录")
+            return
+        
+        card_key = self.unbind_card_key_var.get()
+        hwid = self.unbind_hwid_var.get()
+        
+        if not card_key:
+            messagebox.showwarning("警告", "请输入卡密")
+            return
+        
+        if not hwid:
+            messagebox.showwarning("警告", "请输入要解绑的HWID")
+            return
+        
+        # 确认对话框
+        confirm = messagebox.askyesno(
+            "确认解绑", 
+            f"确定要解绑以下HWID吗？\n\n卡密: {card_key}\nHWID: {hwid}\n\n解绑后该HWID将从卡密绑定列表中移除。"
+        )
+        
+        if not confirm:
+            return
+        
+        try:
+            self.log(f"开始解绑，卡密: {card_key}, HWID: {hwid}", "info")
+            result = self.client.unbind_hwid(card_key, hwid)
+            
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            
+            if result.get("code") == 0:
+                self.log(f"解绑成功: {hwid}", "success")
+                self.unbind_history_text.insert(tk.END, f"[{timestamp}] ✓ 解绑成功: {hwid}\n", "success")
+                self.unbind_history_text.see(tk.END)
+                messagebox.showinfo("成功", f"HWID解绑成功！\n\n已解绑: {hwid}\n\n提示：现在可以用这个HWID重新登录")
+            else:
+                error_msg = result.get('message', '未知错误')
+                self.log(f"解绑失败: {error_msg}", "error")
+                self.unbind_history_text.insert(tk.END, f"[{timestamp}] ✗ 解绑失败: {error_msg}\n", "error")
+                self.unbind_history_text.see(tk.END)
+                messagebox.showerror("失败", f"解绑失败:\n{error_msg}")
+        
+        except Exception as e:
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            self.log(f"解绑异常: {e}", "error")
+            self.unbind_history_text.insert(tk.END, f"[{timestamp}] ✗ 解绑异常: {e}\n", "error")
+            self.unbind_history_text.see(tk.END)
+            messagebox.showerror("错误", f"解绑异常:\n{e}")
+        
+        # 配置历史记录文本的颜色标签
+        self.unbind_history_text.tag_config("success", foreground="green")
+        self.unbind_history_text.tag_config("error", foreground="red")
 
 
 def main():

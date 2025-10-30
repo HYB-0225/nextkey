@@ -77,8 +77,20 @@ int main() {
         std::cout << "  版本: " << proj_info.version << "\n";
         std::cout << "  更新地址: " << proj_info.update_url << "\n\n";
         
-        // 8. 运行一段时间观察心跳
-        std::cout << "[步骤 8] 运行 10 秒以观察心跳...\n";
+        // 8. 解绑HWID示例
+        std::cout << "[步骤 8] 测试解绑HWID功能...\n";
+        std::cout << "提示：此操作需要项目启用解绑功能\n";
+        try {
+            client->unbindHWID(card_key, hwid);
+            std::cout << "✓ HWID解绑成功\n";
+            std::cout << "  注意：解绑后需要重新登录才能在此设备使用\n\n";
+        } catch (const nextkey::NextKeyException& e) {
+            std::cerr << "✗ 解绑失败: " << e.what() << "\n";
+            std::cerr << "  可能原因：项目未启用解绑、冷却期内、或HWID未绑定\n\n";
+        }
+        
+        // 9. 运行一段时间观察心跳
+        std::cout << "[步骤 9] 运行 10 秒以观察心跳...\n";
         std::cout << "（自动心跳将在后台运行）\n\n";
         
         for (int i = 10; i > 0; --i) {
@@ -87,8 +99,8 @@ int main() {
         }
         std::cout << "\n\n";
         
-        // 9. 清理资源（RAII自动完成，心跳会立即停止不阻塞）
-        std::cout << "[步骤 9] 清理资源...\n";
+        // 10. 清理资源（RAII自动完成，心跳会立即停止不阻塞）
+        std::cout << "[步骤 10] 清理资源...\n";
         client->stopAutoHeartbeat();
         std::cout << "✓ 心跳已停止（detach模式，立即返回）\n";
         std::cout << "✓ 资源将自动清理（RAII）\n\n";

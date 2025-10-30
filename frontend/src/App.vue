@@ -7,6 +7,17 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+onMounted(() => {
+  // Initialize token refresh timer if user is logged in
+  if (authStore.token && authStore.refreshToken) {
+    authStore.scheduleTokenRefresh()
+  }
+})
 </script>
 
 <style>

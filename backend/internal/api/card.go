@@ -252,3 +252,19 @@ func BatchUnfreezeCards(c *gin.Context) {
 
 	utils.Success(c, gin.H{"message": "批量恢复成功"})
 }
+
+func UnbindCardHWID(c *gin.Context) {
+	var req service.UnbindRequest
+	if err := middleware.GetDecryptedData(c, &req); err != nil {
+		utils.EncryptedError(c, 400, "参数错误")
+		return
+	}
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.UnbindHWID(&req); err != nil {
+		utils.EncryptedError(c, 400, err.Error())
+		return
+	}
+
+	utils.EncryptedSuccess(c, gin.H{"message": "解绑成功"})
+}

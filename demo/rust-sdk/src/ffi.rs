@@ -310,6 +310,57 @@ pub extern "C" fn nextkey_get_project_info(
     }
 }
 
+/// 解绑HWID
+#[no_mangle]
+pub extern "C" fn nextkey_unbind_hwid(
+    client: *mut NextKeyClient,
+    card_key: *const c_char,
+    hwid: *const c_char,
+) -> i32 {
+    clear_last_error();
+
+    if client.is_null() || card_key.is_null() || hwid.is_null() {
+        set_last_error("参数无效".to_string());
+        return NEXTKEY_ERR_INVALID_PARAM;
+    }
+
+    let card_key = unsafe {
+        match c_str_to_string(card_key) {
+            Some(s) => s,
+            None => {
+                set_last_error("card_key参数无效".to_string());
+                return NEXTKEY_ERR_INVALID_PARAM;
+            }
+        }
+    };
+
+    let hwid = unsafe {
+        match c_str_to_string(hwid) {
+            Some(s) => s,
+            None => {
+                set_last_error("hwid参数无效".to_string());
+                return NEXTKEY_ERR_INVALID_PARAM;
+            }
+        }
+    };
+
+    let client = unsafe { &*client };
+
+    match client.unbind_hwid(&card_key, &hwid) {
+        Ok(response) => {
+            if response.code != 0 {
+                set_last_error(format!("解绑HWID失败: {}", response.message));
+                return response.code;
+            }
+            NEXTKEY_OK
+        }
+        Err(e) => {
+            set_last_error(format!("解绑HWID异常: {}", e));
+            NEXTKEY_ERR_NETWORK
+        }
+    }
+}
+
 /// 获取最后的错误消息
 #[no_mangle]
 pub extern "C" fn nextkey_get_last_error() -> *const c_char {

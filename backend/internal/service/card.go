@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -459,6 +460,100 @@ func (s *CardService) BatchUnfreeze(ids []uint) error {
 	}()
 
 	if err := tx.Model(&models.Card{}).Where("id IN ?", ids).Update("frozen", false).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+type UnbindRequest struct {
+	CardKey     string `json:"card_key"`
+	HWID        string `json:"hwid"`
+	ProjectUUID string `json:"project_uuid"`
+}
+
+func (s *CardService) UnbindHWID(req *UnbindRequest) error {
+	var project models.Project
+	if err := database.DB.Where("uuid = ?", req.ProjectUUID).First(&project).Error; err != nil {
+		return errors.New("项目不存在")
+	}
+
+	if !project.EnableUnbind {
+		return errors.New("该项目未启用解绑功能")
+	}
+
+	var card models.Card
+	if err := database.DB.Where("card_key = ? AND project_id = ?", req.CardKey, project.ID).First(&card).Error; err != nil {
+		return errors.New("卡密不存在")
+	}
+
+	if card.IsFrozen() {
+		return errors.New("卡密已冻结")
+	}
+
+	if req.HWID == "" {
+		return errors.New("HWID不能为空")
+	}
+
+	var lastUnbind models.UnbindRecord
+	if err := database.DB.Where("card_id = ?", card.ID).Order("unbind_at DESC").First(&lastUnbind).Error; err == nil {
+		cooldownEnd := lastUnbind.UnbindAt.Add(time.Duration(project.UnbindCooldown) * time.Second)
+		if time.Now().Before(cooldownEnd) {
+			remainingTime := int(time.Until(cooldownEnd).Seconds())
+			return errors.New("解绑冷却中，请等待 " + strconv.Itoa(remainingTime) + " 秒后再试")
+		}
+	}
+
+	if project.UnbindVerifyHWID {
+		found := false
+		for _, hwid := range card.HWIDList {
+			if hwid == req.HWID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New("该设备未绑定到此卡密")
+		}
+	}
+
+	newHWIDList := make(models.StringArray, 0)
+	for _, hwid := range card.HWIDList {
+		if hwid != req.HWID {
+			newHWIDList = append(newHWIDList, hwid)
+		}
+	}
+	card.HWIDList = newHWIDList
+
+	if project.UnbindDeductTime > 0 && card.ExpireAt != nil {
+		newExpireAt := card.ExpireAt.Add(-time.Duration(project.UnbindDeductTime) * time.Second)
+		if newExpireAt.Before(time.Now()) {
+			card.ExpireAt = nil
+		} else {
+			card.ExpireAt = &newExpireAt
+		}
+	}
+
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Save(&card).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	unbindRecord := models.UnbindRecord{
+		CardID:       card.ID,
+		HWID:         req.HWID,
+		UnbindAt:     time.Now(),
+		DeductedTime: project.UnbindDeductTime,
+	}
+	if err := tx.Create(&unbindRecord).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

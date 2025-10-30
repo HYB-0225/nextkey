@@ -90,9 +90,9 @@ request.interceptors.response.use(
           refresh_token: authStore.refreshToken
         })
         
-        const { access_token, refresh_token } = response.data.data
+        const { access_token, refresh_token, expires_in } = response.data.data
         
-        authStore.setTokens(access_token, refresh_token)
+        authStore.setTokens(access_token, refresh_token, expires_in)
         
         // 更新失败队列中的请求
         processQueue(null, access_token)

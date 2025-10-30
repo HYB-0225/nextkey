@@ -89,6 +89,13 @@ int32_t nextkey_get_project_info(struct NextKeyClient *client,
                                  char **update_url_out);
 
 /*
+ 解绑HWID
+ */
+int32_t nextkey_unbind_hwid(struct NextKeyClient *client,
+                            const char *card_key,
+                            const char *hwid);
+
+/*
  获取最后的错误消息
  */
 const char *nextkey_get_last_error(void);
