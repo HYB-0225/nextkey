@@ -59,16 +59,36 @@ func ListCards(c *gin.Context) {
 	cardType := c.Query("card_type")
 	note := c.Query("note")
 	customData := c.Query("custom_data")
+	status := c.Query("status")
 	activated := c.Query("activated")
 	frozen := c.Query("frozen")
+	expired := c.Query("expired")
 	hwid := c.Query("hwid")
 	ip := c.Query("ip")
 	startTime := c.Query("start_time")
 	endTime := c.Query("end_time")
 
+	// 转换status参数为activated、frozen和expired
+	if status != "" {
+		switch status {
+		case "frozen":
+			frozen = "true"
+		case "activated":
+			activated = "true"
+			frozen = "false"
+			expired = "false"
+		case "expired":
+			activated = "true"
+			frozen = "false"
+			expired = "true"
+		case "not_activated":
+			activated = "false"
+		}
+	}
+
 	cardSvc := service.NewCardService()
 
-	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || frozen != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
+	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || frozen != "" || expired != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
 		filter := &service.CardListFilter{
 			ProjectID:  uint(projectID),
 			Keyword:    keyword,
@@ -77,6 +97,7 @@ func ListCards(c *gin.Context) {
 			CustomData: customData,
 			Activated:  activated,
 			Frozen:     frozen,
+			Expired:    expired,
 			HWID:       hwid,
 			IP:         ip,
 			StartTime:  startTime,

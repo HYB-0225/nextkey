@@ -200,7 +200,10 @@ const handleCreate = () => {
 
 const handleCreateSave = async (formData) => {
   try {
-    const duration = unitValueToSeconds(formData.duration_value, formData.duration_unit)
+    // 永久卡自动设置duration为0
+    const duration = formData.card_type === 'permanent' 
+      ? 0 
+      : unitValueToSeconds(formData.duration_value, formData.duration_unit)
     
     const params = {
       project_id: selectedProjectId.value,
@@ -251,7 +254,10 @@ const handleEdit = (row) => {
 
 const handleEditSave = async (formData) => {
   try {
-    const duration = unitValueToSeconds(formData.duration_value, formData.duration_unit)
+    // 永久卡自动设置duration为0
+    const duration = formData.card_type === 'permanent' 
+      ? 0 
+      : unitValueToSeconds(formData.duration_value, formData.duration_unit)
     
     await updateCard(formData.id, {
       duration: duration,
@@ -300,12 +306,21 @@ const handleBatchUpdateSave = async (formData) => {
   try {
     const updateData = {}
     
-    if (formData.update_duration) {
-      updateData.duration = unitValueToSeconds(formData.duration_value, formData.duration_unit)
-    }
     if (formData.update_card_type) {
       updateData.card_type = formData.card_type
+      // 如果改为永久卡，自动设置duration为0
+      if (formData.card_type === 'permanent') {
+        updateData.duration = 0
+      }
     }
+    
+    if (formData.update_duration) {
+      // 永久卡自动设置duration为0，否则计算时长
+      updateData.duration = formData.card_type === 'permanent' 
+        ? 0 
+        : unitValueToSeconds(formData.duration_value, formData.duration_unit)
+    }
+    
     if (formData.update_max_hwid) {
       updateData.max_hwid = formData.max_hwid
     }

@@ -57,6 +57,7 @@ type CardListFilter struct {
 	CustomData string
 	Activated  string
 	Frozen     string
+	Expired    string
 	HWID       string
 	IP         string
 	StartTime  string
@@ -107,7 +108,13 @@ func (s *CardService) CreateBatch(req *CreateCardRequest) ([]models.Card, error)
 	return cards, nil
 }
 
-func (s *CardService) List(projectID uint, page, pageSize int) ([]models.Card, int64, error) {
+type CardResponse struct {
+	models.Card
+	Status    string `json:"status"`
+	IsExpired bool   `json:"is_expired"`
+}
+
+func (s *CardService) List(projectID uint, page, pageSize int) ([]CardResponse, int64, error) {
 	var cards []models.Card
 	var total int64
 
@@ -123,10 +130,19 @@ func (s *CardService) List(projectID uint, page, pageSize int) ([]models.Card, i
 		return nil, 0, err
 	}
 
-	return cards, total, nil
+	responses := make([]CardResponse, len(cards))
+	for i, card := range cards {
+		responses[i] = CardResponse{
+			Card:      card,
+			Status:    card.GetStatus(),
+			IsExpired: card.IsExpired(),
+		}
+	}
+
+	return responses, total, nil
 }
 
-func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int64, error) {
+func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, int64, error) {
 	var cards []models.Card
 	var total int64
 
@@ -178,6 +194,12 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int
 		query = query.Where("frozen = ?", false)
 	}
 
+	if filter.Expired == "true" {
+		query = query.Where("activated = ? AND frozen = ? AND expire_at IS NOT NULL AND expire_at < ?", true, false, time.Now())
+	} else if filter.Expired == "false" {
+		query = query.Where("(activated = ? OR expire_at IS NULL OR expire_at >= ?)", false, time.Now())
+	}
+
 	if filter.StartTime != "" {
 		query = query.Where("created_at >= ?", filter.StartTime)
 	}
@@ -193,7 +215,16 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]models.Card, int
 		return nil, 0, err
 	}
 
-	return cards, total, nil
+	responses := make([]CardResponse, len(cards))
+	for i, card := range cards {
+		responses[i] = CardResponse{
+			Card:      card,
+			Status:    card.GetStatus(),
+			IsExpired: card.IsExpired(),
+		}
+	}
+
+	return responses, total, nil
 }
 
 func (s *CardService) Get(id uint) (*models.Card, error) {

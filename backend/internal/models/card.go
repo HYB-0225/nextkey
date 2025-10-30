@@ -8,6 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	CardTypeTrial     = "trial"
+	CardTypeMonth     = "month"
+	CardTypeQuarter   = "quarter"
+	CardTypeYear      = "year"
+	CardTypePermanent = "permanent"
+)
+
 type StringArray []string
 
 func (s StringArray) Value() (driver.Value, error) {
@@ -52,10 +60,20 @@ type Card struct {
 }
 
 func (c *Card) IsExpired() bool {
-	if c.ExpireAt == nil {
+	if !c.Activated || c.ExpireAt == nil || c.Duration == 0 {
 		return false
 	}
 	return time.Now().After(*c.ExpireAt)
+}
+
+func (c *Card) GetStatus() string {
+	if c.Frozen {
+		return "frozen"
+	}
+	if c.Activated {
+		return "activated"
+	}
+	return "not_activated"
 }
 
 func (c *Card) CanAddHWID() bool {

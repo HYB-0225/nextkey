@@ -51,3 +51,58 @@ export function unitValueToSeconds(value, unit) {
   return value * (TIME_UNITS[unit]?.value || 1)
 }
 
+export function formatExpireTime(card) {
+  // 未激活
+  if (!card.activated) {
+    return '未激活'
+  }
+  
+  // 永久卡
+  if (card.duration === 0) {
+    return '永久'
+  }
+  
+  // 没有过期时间
+  if (!card.expire_at) {
+    return '未激活'
+  }
+  
+  const expireDate = new Date(card.expire_at)
+  const now = new Date()
+  const diffMs = expireDate - now
+  
+  // 格式化完整时间
+  const dateStr = expireDate.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(/\//g, '-')
+  
+  // 已过期
+  if (card.is_expired || diffMs < 0) {
+    return `已过期 (${dateStr})`
+  }
+  
+  // 计算相对时间
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  
+  let relativeTime = ''
+  if (diffDays > 0) {
+    relativeTime = `还剩${diffDays}天`
+  } else if (diffHours > 0) {
+    relativeTime = `还剩${diffHours}小时`
+  } else if (diffMinutes > 0) {
+    relativeTime = `还剩${diffMinutes}分钟`
+  } else {
+    relativeTime = `还剩${diffSeconds}秒`
+  }
+  
+  return `${relativeTime} (${dateStr})`
+}
+

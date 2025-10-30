@@ -33,9 +33,20 @@
         </el-form-item>
       </template>
       
-      <el-form-item label="有效时长">
+      <el-form-item label="卡密类型">
+        <el-select v-model="form.card_type" placeholder="请选择卡密类型" style="width: 100%;">
+          <el-option
+            v-for="type in CARD_TYPES"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
+          />
+        </el-select>
+      </el-form-item>
+      
+      <el-form-item label="有效时长" v-if="form.card_type !== 'permanent'">
         <div style="display: flex; gap: 10px; align-items: center;">
-          <el-input-number v-model="form.duration_value" :min="0" style="width: 150px;" />
+          <el-input-number v-model="form.duration_value" :min="1" style="width: 150px;" />
           <el-select v-model="form.duration_unit" style="width: 100px;">
             <el-option label="秒" value="second" />
             <el-option label="天" value="day" />
@@ -45,11 +56,12 @@
             <el-option label="年" value="year" />
           </el-select>
         </div>
-        <div style="color: #999; font-size: 12px; margin-top: 5px;">0表示永久</div>
       </el-form-item>
       
-      <el-form-item label="卡密类型">
-        <el-input v-model="form.card_type" placeholder="normal" />
+      <el-form-item v-if="form.card_type === 'permanent'">
+        <el-alert type="info" :closable="false" show-icon>
+          永久卡无需设置时长
+        </el-alert>
       </el-form-item>
       
       <el-form-item label="设备码上限">
@@ -79,6 +91,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { staggerFormItems } from '@/utils/animations'
+import { CARD_TYPES } from '@/constants/cardTypes'
 
 const { isMobile } = useResponsive()
 
@@ -101,7 +114,7 @@ const form = ref({
   count: 10,
   duration_value: 30,
   duration_unit: 'day',
-  card_type: 'normal',
+  card_type: 'month',
   max_hwid: -1,
   max_ip: -1,
   note: ''
@@ -127,7 +140,7 @@ const resetForm = () => {
     count: 10,
     duration_value: 30,
     duration_unit: 'day',
-    card_type: 'normal',
+    card_type: 'month',
     max_hwid: -1,
     max_ip: -1,
     note: ''

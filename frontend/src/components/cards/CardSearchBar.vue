@@ -16,35 +16,34 @@
           </template>
         </el-input>
         
-        <el-input 
-          v-model="searchForm.card_type" 
-          placeholder="类型" 
-          clearable
-          class="search-input-sm"
-          @clear="handleSearch"
-          @keyup.enter="handleSearch"
-        />
-        
         <el-select 
-          v-model="searchForm.activated" 
-          placeholder="激活状态" 
+          v-model="searchForm.card_type" 
+          placeholder="卡密类型" 
           clearable
           class="search-select-sm"
           @change="handleSearch"
         >
-          <el-option label="已激活" value="true" />
-          <el-option label="未激活" value="false" />
+          <el-option
+            v-for="type in CARD_TYPES"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
+          />
         </el-select>
         
         <el-select 
-          v-model="searchForm.frozen" 
-          placeholder="冻结状态" 
+          v-model="searchForm.status" 
+          placeholder="状态" 
           clearable
           class="search-select-sm"
           @change="handleSearch"
         >
-          <el-option label="已冻结" value="true" />
-          <el-option label="未冻结" value="false" />
+          <el-option
+            v-for="status in CARD_STATUS"
+            :key="status.value"
+            :label="status.label"
+            :value="status.value"
+          />
         </el-select>
         
         <el-input 
@@ -125,6 +124,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Search, ArrowDown } from '@element-plus/icons-vue'
+import { CARD_TYPES, CARD_STATUS } from '@/constants/cardTypes'
 
 const emit = defineEmits(['search', 'reset'])
 
@@ -133,8 +133,7 @@ const showAdvanced = ref(false)
 const searchForm = ref({
   keyword: '',
   card_type: '',
-  activated: '',
-  frozen: '',
+  status: '',
   note: '',
   custom_data: '',
   hwid: '',
@@ -162,8 +161,7 @@ const handleReset = () => {
   searchForm.value = {
     keyword: '',
     card_type: '',
-    activated: '',
-    frozen: '',
+    status: '',
     note: '',
     custom_data: '',
     hwid: '',

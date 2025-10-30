@@ -13,19 +13,23 @@
         </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <el-tag v-if="row.frozen" type="danger" size="small">
-                已冻结
-              </el-tag>
-              <el-tag v-else :type="row.activated ? 'success' : 'info'" size="small">
-                {{ row.activated ? '已激活' : '未激活' }}
-              </el-tag>
-            </div>
+            <el-tag v-if="row.status === 'frozen'" type="danger" size="small">
+              已冻结
+            </el-tag>
+            <el-tag v-else-if="row.is_expired && row.status === 'activated'" type="warning" size="small">
+              已过期
+            </el-tag>
+            <el-tag v-else-if="row.status === 'activated'" type="success" size="small">
+              已激活
+            </el-tag>
+            <el-tag v-else type="info" size="small">
+              未激活
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="有效时长" width="120">
+        <el-table-column label="到期时间" width="220">
           <template #default="{ row }">
-            {{ formatDuration(row.duration) }}
+            {{ formatExpireTime(row) }}
           </template>
         </el-table-column>
         <el-table-column prop="card_type" label="类型" width="100" />
@@ -79,7 +83,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Edit, View, Delete, Lock, Unlock } from '@element-plus/icons-vue'
-import { formatDuration } from '@/composables/useDuration'
+import { formatDuration, formatExpireTime } from '@/composables/useDuration'
 import ActionButtons from '@/components/common/ActionButtons.vue'
 import CopyableText from '@/components/common/CopyableText.vue'
 import CardListMobile from './CardListMobile.vue'

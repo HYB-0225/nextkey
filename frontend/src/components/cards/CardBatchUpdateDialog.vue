@@ -4,12 +4,26 @@
       已选择 {{ selectedCount }} 个卡密,只修改填写的字段
     </el-alert>
     <el-form :model="form" :label-width="isMobile ? '0px' : '120px'" :label-position="isMobile ? 'top' : 'right'">
-      <el-form-item label="有效时长">
+      <el-form-item label="卡密类型">
+        <el-checkbox v-model="form.update_card_type" style="margin-bottom: 10px;">
+          修改类型
+        </el-checkbox>
+        <el-select v-if="form.update_card_type" v-model="form.card_type" placeholder="请选择卡密类型" style="width: 100%;">
+          <el-option
+            v-for="type in CARD_TYPES"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
+          />
+        </el-select>
+      </el-form-item>
+      
+      <el-form-item label="有效时长" v-if="form.card_type !== 'permanent' || !form.update_card_type">
         <el-checkbox v-model="form.update_duration" style="margin-bottom: 10px;">
           修改时长
         </el-checkbox>
         <div v-if="form.update_duration" style="display: flex; gap: 10px; align-items: center;">
-          <el-input-number v-model="form.duration_value" :min="0" style="width: 150px;" />
+          <el-input-number v-model="form.duration_value" :min="form.card_type === 'permanent' ? 0 : 1" style="width: 150px;" />
           <el-select v-model="form.duration_unit" style="width: 100px;">
             <el-option label="秒" value="second" />
             <el-option label="天" value="day" />
@@ -21,11 +35,10 @@
         </div>
       </el-form-item>
       
-      <el-form-item label="卡密类型">
-        <el-checkbox v-model="form.update_card_type" style="margin-bottom: 10px;">
-          修改类型
-        </el-checkbox>
-        <el-input v-if="form.update_card_type" v-model="form.card_type" placeholder="normal" />
+      <el-form-item v-if="form.update_card_type && form.card_type === 'permanent'">
+        <el-alert type="info" :closable="false" show-icon>
+          永久卡无需设置时长
+        </el-alert>
       </el-form-item>
       
       <el-form-item label="设备码上限">
@@ -60,6 +73,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useResponsive } from '@/composables/useResponsive'
+import { CARD_TYPES } from '@/constants/cardTypes'
 
 const { isMobile } = useResponsive()
 
@@ -83,7 +97,7 @@ const form = ref({
   duration_value: 30,
   duration_unit: 'day',
   update_card_type: false,
-  card_type: 'normal',
+  card_type: 'month',
   update_max_hwid: false,
   max_hwid: -1,
   update_max_ip: false,
@@ -109,7 +123,7 @@ const resetForm = () => {
     duration_value: 30,
     duration_unit: 'day',
     update_card_type: false,
-    card_type: 'normal',
+    card_type: 'month',
     update_max_hwid: false,
     max_hwid: -1,
     update_max_ip: false,
