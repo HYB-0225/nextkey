@@ -26,16 +26,18 @@ func NewCardService() *CardService {
 }
 
 type CreateCardRequest struct {
-	ProjectID uint   `json:"project_id"`
-	CardKey   string `json:"card_key"`
-	Prefix    string `json:"prefix"`
-	Suffix    string `json:"suffix"`
-	Count     int    `json:"count"`
-	Duration  int    `json:"duration"`
-	CardType  string `json:"card_type"`
-	MaxHWID   int    `json:"max_hwid"`
-	MaxIP     int    `json:"max_ip"`
-	Note      string `json:"note"`
+	ProjectID   uint   `json:"project_id"`
+	CardKey     string `json:"card_key"`
+	Prefix      string `json:"prefix"`
+	Suffix      string `json:"suffix"`
+	Count       int    `json:"count"`
+	Length      int    `json:"length"`
+	CharsetType string `json:"charset_type"`
+	Duration    int    `json:"duration"`
+	CardType    string `json:"card_type"`
+	MaxHWID     int    `json:"max_hwid"`
+	MaxIP       int    `json:"max_ip"`
+	Note        string `json:"note"`
 }
 
 type UpdateCardRequest struct {
@@ -73,6 +75,21 @@ func (s *CardService) CreateBatch(req *CreateCardRequest) ([]models.Card, error)
 		return nil, errors.New("项目不存在")
 	}
 
+	if req.Length == 0 {
+		req.Length = 16
+	}
+	if req.CharsetType == "" {
+		req.CharsetType = utils.CharsetTypeAlphanumeric
+	}
+
+	if req.Length < 6 || req.Length > 32 {
+		return nil, errors.New("随机长度必须在6-32之间")
+	}
+
+	if req.CharsetType != utils.CharsetTypeLetters && req.CharsetType != utils.CharsetTypeAlphanumeric {
+		return nil, errors.New("字符类型无效")
+	}
+
 	cards := make([]models.Card, 0, req.Count)
 
 	for i := 0; i < req.Count; i++ {
@@ -80,7 +97,7 @@ func (s *CardService) CreateBatch(req *CreateCardRequest) ([]models.Card, error)
 		if req.CardKey != "" && req.Count == 1 {
 			cardKey = req.CardKey
 		} else {
-			cardKey = utils.GenerateCardKey(req.Prefix, req.Suffix, 16)
+			cardKey = utils.GenerateCardKey(req.Prefix, req.Suffix, req.Length, req.CharsetType)
 		}
 
 		card := models.Card{

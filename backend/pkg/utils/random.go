@@ -5,9 +5,29 @@ import (
 	"math/big"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const (
+	CharsetLetters      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	CharsetAlphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
 
-func RandomString(length int) string {
+const (
+	CharsetTypeLetters      = "letters"
+	CharsetTypeAlphanumeric = "alphanumeric"
+)
+
+func getCharset(charsetType string) string {
+	switch charsetType {
+	case CharsetTypeLetters:
+		return CharsetLetters
+	case CharsetTypeAlphanumeric:
+		return CharsetAlphanumeric
+	default:
+		return CharsetAlphanumeric
+	}
+}
+
+func RandomString(length int, charsetType string) string {
+	charset := getCharset(charsetType)
 	result := make([]byte, length)
 	for i := range result {
 		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
@@ -16,10 +36,12 @@ func RandomString(length int) string {
 	return string(result)
 }
 
-func GenerateCardKey(prefix, suffix string, length int) string {
-	if length < len(prefix)+len(suffix) {
-		length = len(prefix) + len(suffix) + 8
+func GenerateCardKey(prefix, suffix string, length int, charsetType string) string {
+	if length < 6 {
+		length = 6
 	}
-	randomLen := length - len(prefix) - len(suffix)
-	return prefix + RandomString(randomLen) + suffix
+	if length > 32 {
+		length = 32
+	}
+	return prefix + RandomString(length, charsetType) + suffix
 }

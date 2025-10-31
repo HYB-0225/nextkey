@@ -23,13 +23,42 @@
       
       <template v-if="form.mode === 'batch'">
         <el-form-item label="前缀">
-          <el-input v-model="form.prefix" />
+          <el-input v-model="form.prefix" placeholder="可选" />
         </el-form-item>
         <el-form-item label="后缀">
-          <el-input v-model="form.suffix" />
+          <el-input v-model="form.suffix" placeholder="可选" />
         </el-form-item>
         <el-form-item label="生成数量">
           <el-input-number v-model="form.count" :min="1" :max="1000" />
+        </el-form-item>
+        
+        <el-form-item label="高级选项">
+          <el-collapse v-model="advancedOptions" style="width: 100%;">
+            <el-collapse-item name="1">
+              <template #title>
+                <span style="font-size: 14px; color: #606266;">卡密生成配置</span>
+              </template>
+              
+              <el-form :label-width="isMobile ? '0px' : '100px'" :label-position="isMobile ? 'top' : 'right'">
+                <el-form-item label="随机长度">
+                  <el-input-number v-model="form.length" :min="6" :max="32" />
+                  <div style="color: #999; font-size: 12px; margin-top: 5px;">
+                    随机部分的字符数量，范围6-32
+                  </div>
+                </el-form-item>
+                
+                <el-form-item label="字符类型">
+                  <el-radio-group v-model="form.charset_type">
+                    <el-radio label="alphanumeric">英文+数字</el-radio>
+                    <el-radio label="letters">仅英文</el-radio>
+                  </el-radio-group>
+                  <div style="color: #999; font-size: 12px; margin-top: 5px;">
+                    随机部分使用的字符集
+                  </div>
+                </el-form-item>
+              </el-form>
+            </el-collapse-item>
+          </el-collapse>
         </el-form-item>
       </template>
       
@@ -126,6 +155,7 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'save'])
 
 const dialogVisible = ref(false)
+const advancedOptions = ref([])
 
 const form = ref({
   mode: 'batch',
@@ -133,6 +163,8 @@ const form = ref({
   prefix: '',
   suffix: '',
   count: 10,
+  length: 16,
+  charset_type: 'alphanumeric',
   is_permanent: false,
   duration_value: 30,
   duration_unit: 'day',
@@ -181,6 +213,8 @@ const resetForm = () => {
     prefix: '',
     suffix: '',
     count: 10,
+    length: 16,
+    charset_type: 'alphanumeric',
     is_permanent: false,
     duration_value: 30,
     duration_unit: 'day',
@@ -189,6 +223,7 @@ const resetForm = () => {
     max_ip: -1,
     note: ''
   }
+  advancedOptions.value = []
 }
 
 const handleClose = () => {
