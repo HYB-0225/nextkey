@@ -127,7 +127,6 @@ database:
   path: ./nextkey.db
 
 security:
-  aes_key: "auto-generated-32-chars-key"
   jwt_secret: "auto-generated-secret"
   token_expire: 3600 # 秒
   replay_window: 300 # 防重放时间窗口(秒)
