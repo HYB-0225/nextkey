@@ -55,6 +55,7 @@ target/
 Cargo.lock
 *.rlib
 *.rmeta
+demo/rust-sdk/include/
 
 # C/C++
 *.o
