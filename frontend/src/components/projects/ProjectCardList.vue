@@ -1,5 +1,16 @@
 <template>
   <div class="project-card-list" ref="cardListRef">
+    <div v-if="projects.length > 0" class="select-all-bar">
+      <el-checkbox 
+        v-model="isAllSelected" 
+        :indeterminate="isIndeterminate"
+        @change="handleSelectAll"
+      >
+        全选当前页
+      </el-checkbox>
+      <span class="select-info">已选 {{ selectedIds.length }} / {{ projects.length }}</span>
+    </div>
+    
     <div 
       v-for="project in projects" 
       :key="project.id" 
@@ -71,6 +82,17 @@
       <el-icon><Box /></el-icon>
       <span>暂无项目</span>
     </div>
+    
+    <el-pagination
+      v-if="total > 0"
+      class="mobile-pagination"
+      :current-page="page"
+      :page-size="pageSize"
+      :total="total"
+      :small="true"
+      layout="prev, pager, next"
+      @current-change="handlePageChange"
+    />
   </div>
 </template>
 
@@ -92,10 +114,22 @@ const props = defineProps({
   selectedProjects: {
     type: Array,
     default: () => []
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 20
+  },
+  total: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['selection-change', 'edit', 'view-cards', 'view-vars', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'delete'])
 
 const selectedIds = computed({
   get: () => props.selectedProjects.map(p => p.id),
@@ -104,6 +138,27 @@ const selectedIds = computed({
     emit('selection-change', selected)
   }
 })
+
+const isAllSelected = computed(() => {
+  return props.projects.length > 0 && selectedIds.value.length === props.projects.length
+})
+
+const isIndeterminate = computed(() => {
+  const selectedCount = selectedIds.value.length
+  return selectedCount > 0 && selectedCount < props.projects.length
+})
+
+const handleSelectAll = (checked) => {
+  if (checked) {
+    emit('selection-change', [...props.projects])
+  } else {
+    emit('selection-change', [])
+  }
+}
+
+const handlePageChange = (newPage) => {
+  emit('page-change', newPage)
+}
 
 const handleCardClick = (project) => {
   // 点击卡片主体区域时不做任何操作,只有点击按钮才触发
@@ -143,6 +198,23 @@ const animateCards = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.select-all-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  margin-bottom: 4px;
+}
+
+.select-info {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .project-card {
@@ -270,6 +342,20 @@ const animateCards = () => {
 
 :deep(.el-checkbox__label) {
   display: none;
+}
+
+.mobile-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.el-pagination.is-small .btn-prev),
+:deep(.el-pagination.is-small .btn-next),
+:deep(.el-pagination.is-small .el-pager li) {
+  min-width: 28px;
+  height: 28px;
+  line-height: 28px;
 }
 </style>
 

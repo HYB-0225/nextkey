@@ -48,14 +48,21 @@ func CreateProject(c *gin.Context) {
 }
 
 func ListProjects(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
 	projectSvc := service.NewProjectService()
-	projects, err := projectSvc.List()
+	projects, total, err := projectSvc.List(page, pageSize)
 	if err != nil {
 		utils.Error(c, 500, err.Error())
 		return
 	}
 
-	utils.Success(c, projects)
+	utils.Success(c, gin.H{
+		"list":  projects,
+		"total": total,
+		"page":  page,
+	})
 }
 
 func GetProjectByUUID(c *gin.Context) {

@@ -1,5 +1,16 @@
 <template>
   <div class="cloudvar-card-list" ref="cardListRef">
+    <div v-if="cloudVars.length > 0" class="select-all-bar">
+      <el-checkbox 
+        v-model="isAllSelected" 
+        :indeterminate="isIndeterminate"
+        @change="handleSelectAll"
+      >
+        全选当前页
+      </el-checkbox>
+      <span class="select-info">已选 {{ selectedIds.length }} / {{ cloudVars.length }}</span>
+    </div>
+    
     <div 
       v-for="cloudvar in cloudVars" 
       :key="cloudvar.id" 
@@ -45,6 +56,17 @@
       <el-icon><Cloudy /></el-icon>
       <span>暂无云变量</span>
     </div>
+    
+    <el-pagination
+      v-if="total > 0"
+      class="mobile-pagination"
+      :current-page="page"
+      :page-size="pageSize"
+      :total="total"
+      :small="true"
+      layout="prev, pager, next"
+      @current-change="handlePageChange"
+    />
   </div>
 </template>
 
@@ -65,10 +87,22 @@ const props = defineProps({
   selectedVars: {
     type: Array,
     default: () => []
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 20
+  },
+  total: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['selection-change', 'edit', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'delete'])
 
 const selectedIds = computed({
   get: () => props.selectedVars.map(v => v.id),
@@ -77,6 +111,27 @@ const selectedIds = computed({
     emit('selection-change', selected)
   }
 })
+
+const isAllSelected = computed(() => {
+  return props.cloudVars.length > 0 && selectedIds.value.length === props.cloudVars.length
+})
+
+const isIndeterminate = computed(() => {
+  const selectedCount = selectedIds.value.length
+  return selectedCount > 0 && selectedCount < props.cloudVars.length
+})
+
+const handleSelectAll = (checked) => {
+  if (checked) {
+    emit('selection-change', [...props.cloudVars])
+  } else {
+    emit('selection-change', [])
+  }
+}
+
+const handlePageChange = (newPage) => {
+  emit('page-change', newPage)
+}
 
 // 动画相关
 const cardListRef = ref(null)
@@ -111,6 +166,23 @@ const animateCards = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.select-all-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  margin-bottom: 4px;
+}
+
+.select-info {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .cloudvar-card {
@@ -219,6 +291,20 @@ const animateCards = () => {
 
 :deep(.el-checkbox__label) {
   display: none;
+}
+
+.mobile-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.el-pagination.is-small .btn-prev),
+:deep(.el-pagination.is-small .btn-next),
+:deep(.el-pagination.is-small .el-pager li) {
+  min-width: 28px;
+  height: 28px;
+  line-height: 28px;
 }
 </style>
 

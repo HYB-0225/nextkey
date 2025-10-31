@@ -24,7 +24,11 @@
       :cloud-vars="cloudVars"
       :loading="loading"
       :selected-vars="selectedVars"
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
       @selection-change="handleSelectionChange"
+      @page-change="(newPage) => $emit('page-change', newPage)"
       @edit="(row) => $emit('edit', row)"
       @delete="(row) => $emit('delete', row)"
     />
@@ -50,10 +54,22 @@ defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 20
+  },
+  total: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['selection-change', 'edit', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'delete'])
 
 const handleSelectionChange = (selection) => {
   selectedVars.value = selection

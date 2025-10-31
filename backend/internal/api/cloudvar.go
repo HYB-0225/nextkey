@@ -41,15 +41,21 @@ func SetCloudVar(c *gin.Context) {
 
 func ListCloudVars(c *gin.Context) {
 	projectID, _ := strconv.Atoi(c.DefaultQuery("project_id", "0"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
 	cloudVarSvc := service.NewCloudVarService()
-	cloudVars, err := cloudVarSvc.List(uint(projectID))
+	cloudVars, total, err := cloudVarSvc.List(uint(projectID), page, pageSize)
 	if err != nil {
 		utils.Error(c, 500, err.Error())
 		return
 	}
 
-	utils.Success(c, cloudVars)
+	utils.Success(c, gin.H{
+		"list":  cloudVars,
+		"total": total,
+		"page":  page,
+	})
 }
 
 func DeleteCloudVar(c *gin.Context) {

@@ -50,16 +50,29 @@ func (s *CloudVarService) Get(projectID uint, key string) (*models.CloudVar, err
 	return &cloudVar, nil
 }
 
-func (s *CloudVarService) List(projectID uint) ([]models.CloudVar, error) {
+func (s *CloudVarService) List(projectID uint, page, pageSize int) ([]models.CloudVar, int64, error) {
 	var cloudVars []models.CloudVar
+	var total int64
+
 	query := database.DB.Model(&models.CloudVar{})
 	if projectID > 0 {
 		query = query.Where("project_id = ?", projectID)
 	}
-	if err := query.Find(&cloudVars).Error; err != nil {
-		return nil, err
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return cloudVars, nil
+
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = query.Offset(offset).Limit(pageSize)
+	}
+
+	if err := query.Find(&cloudVars).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return cloudVars, total, nil
 }
 
 func (s *CloudVarService) Delete(id uint) error {

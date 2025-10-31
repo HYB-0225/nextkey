@@ -1,9 +1,10 @@
 import request from './request'
 
-export function getProjects() {
+export function getProjects(params) {
   return request({
     url: '/admin/projects',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 

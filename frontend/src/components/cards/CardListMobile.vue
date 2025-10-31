@@ -1,5 +1,16 @@
 <template>
   <div class="card-list-mobile" ref="cardListRef">
+    <div v-if="cards.length > 0" class="select-all-bar">
+      <el-checkbox 
+        v-model="isAllSelected" 
+        :indeterminate="isIndeterminate"
+        @change="handleSelectAll"
+      >
+        全选当前页
+      </el-checkbox>
+      <span class="select-info">已选 {{ selectedIds.length }} / {{ cards.length }}</span>
+    </div>
+    
     <div 
       v-for="card in cards" 
       :key="card.id" 
@@ -127,6 +138,23 @@ const selectedIds = computed({
   }
 })
 
+const isAllSelected = computed(() => {
+  return props.cards.length > 0 && selectedIds.value.length === props.cards.length
+})
+
+const isIndeterminate = computed(() => {
+  const selectedCount = selectedIds.value.length
+  return selectedCount > 0 && selectedCount < props.cards.length
+})
+
+const handleSelectAll = (checked) => {
+  if (checked) {
+    emit('selection-change', [...props.cards])
+  } else {
+    emit('selection-change', [])
+  }
+}
+
 const handlePageChange = (newPage) => {
   emit('page-change', newPage)
 }
@@ -164,6 +192,23 @@ const animateCards = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.select-all-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  margin-bottom: 4px;
+}
+
+.select-info {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .card-item {

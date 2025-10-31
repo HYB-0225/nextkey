@@ -73,12 +73,25 @@ func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, err
 	return project, nil
 }
 
-func (s *ProjectService) List() ([]models.Project, error) {
+func (s *ProjectService) List(page, pageSize int) ([]models.Project, int64, error) {
 	var projects []models.Project
-	if err := database.DB.Find(&projects).Error; err != nil {
-		return nil, err
+	var total int64
+
+	query := database.DB.Model(&models.Project{})
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return projects, nil
+
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = query.Offset(offset).Limit(pageSize)
+	}
+
+	if err := query.Find(&projects).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return projects, total, nil
 }
 
 func (s *ProjectService) GetByUUID(uuid string) (*models.Project, error) {

@@ -23,7 +23,11 @@
       <ProjectTable
         :projects="projects"
         :loading="loading"
+        :page="page"
+        :page-size="pageSize"
+        :total="total"
         @selection-change="handleSelectionChange"
+        @page-change="handlePageChange"
         @edit="handleEdit"
         @view-cards="handleViewCards"
         @view-vars="handleViewVars"
@@ -60,6 +64,9 @@ import ProjectBatchCreateDialog from '@/components/projects/ProjectBatchCreateDi
 const router = useRouter()
 const loading = ref(false)
 const projects = ref([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 const dialogVisible = ref(false)
 const batchCreateDialogVisible = ref(false)
 const dialogTitle = ref('')
@@ -80,12 +87,23 @@ const freeProjectsCount = computed(() => {
 const loadProjects = async () => {
   loading.value = true
   try {
-    projects.value = await getProjects()
+    const res = await getProjects({
+      page: page.value,
+      page_size: pageSize.value
+    })
+    projects.value = res.list
+    total.value = res.total
   } catch (error) {
     console.error(error)
   } finally {
     loading.value = false
   }
+}
+
+const handlePageChange = (newPage) => {
+  page.value = newPage
+  selectedProjects.value = []
+  loadProjects()
 }
 
 const handleCreate = () => {

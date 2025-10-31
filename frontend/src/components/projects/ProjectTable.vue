@@ -51,7 +51,11 @@
       :projects="projects"
       :loading="loading"
       :selected-projects="selectedProjects"
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
       @selection-change="handleSelectionChange"
+      @page-change="(newPage) => $emit('page-change', newPage)"
       @edit="(row) => $emit('edit', row)"
       @view-cards="(row) => $emit('view-cards', row)"
       @view-vars="(row) => $emit('view-vars', row)"
@@ -80,10 +84,22 @@ defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  page: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 20
+  },
+  total: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['selection-change', 'edit', 'view-cards', 'view-vars', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'delete'])
 
 const handleSelectionChange = (selection) => {
   selectedProjects.value = selection

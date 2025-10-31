@@ -25,7 +25,11 @@
       <CloudVarTable
         :cloud-vars="cloudVars"
         :loading="loading"
+        :page="page"
+        :page-size="pageSize"
+        :total="total"
         @selection-change="handleSelectionChange"
+        @page-change="handlePageChange"
         @edit="handleEdit"
         @delete="handleDelete"
       />
@@ -65,6 +69,9 @@ const loading = ref(false)
 const projects = ref([])
 const selectedProjectId = ref(null)
 const cloudVars = ref([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 const dialogVisible = ref(false)
 const batchImportDialogVisible = ref(false)
 const dialogTitle = ref('')
@@ -75,7 +82,8 @@ const { selectedItems: selectedVars, handleSelectionChange } = useTableSelection
 
 const loadProjects = async () => {
   try {
-    projects.value = await getProjects()
+    const res = await getProjects({ page: 1, page_size: 1000 })
+    projects.value = res.list || []
     if (route.params.projectId) {
       selectedProjectId.value = parseInt(route.params.projectId)
       loadCloudVars()
@@ -89,12 +97,24 @@ const loadCloudVars = async () => {
   if (!selectedProjectId.value) return
   loading.value = true
   try {
-    cloudVars.value = await getCloudVars({ project_id: selectedProjectId.value })
+    const res = await getCloudVars({
+      project_id: selectedProjectId.value,
+      page: page.value,
+      page_size: pageSize.value
+    })
+    cloudVars.value = res.list
+    total.value = res.total
   } catch (error) {
     console.error(error)
   } finally {
     loading.value = false
   }
+}
+
+const handlePageChange = (newPage) => {
+  page.value = newPage
+  selectedVars.value = []
+  loadCloudVars()
 }
 
 const handleCreate = () => {

@@ -19,6 +19,12 @@
           <el-icon><Plus /></el-icon>
           生成卡密
         </el-button>
+        <el-button v-if="isMobile && cards.length > 0" type="info" @click="handleSelectAll">
+          全选
+        </el-button>
+        <el-button v-if="isMobile && selectedCards.length > 0" @click="handleUnselectAll">
+          反选
+        </el-button>
         <el-button type="warning" @click="handleBatchUpdate" :disabled="selectedCards.length === 0">
           批量修改
         </el-button>
@@ -147,7 +153,8 @@ const createdCards = ref([])
 
 const loadProjects = async () => {
   try {
-    projects.value = await getProjects()
+    const res = await getProjects({ page: 1, page_size: 1000 })
+    projects.value = res.list || []
     if (route.params.projectId) {
       selectedProjectId.value = parseInt(route.params.projectId)
       loadCards()
@@ -303,6 +310,14 @@ const handleDelete = (row) => {
       console.error(error)
     }
   }).catch(() => {})
+}
+
+const handleSelectAll = () => {
+  selectedCards.value = [...cards.value]
+}
+
+const handleUnselectAll = () => {
+  selectedCards.value = []
 }
 
 const handleBatchUpdate = () => {
