@@ -8,8 +8,8 @@
       :close-on-click-modal="false"
       @close="handleClose"
     >
-      <div class="success-header">
-        <el-icon :size="48" color="#67C23A"><SuccessFilled /></el-icon>
+      <div class="success-header pixel-success-box">
+        <el-icon :size="48" color="#FFD93D"><SuccessFilled /></el-icon>
         <div class="success-text">
           <h3>成功生成 {{ cards.length }} 个卡密</h3>
           <p>您可以导出或复制这些卡密</p>
@@ -142,22 +142,63 @@ const handleCopyAll = async () => {
 .success-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: var(--radius-lg);
+  padding: 24px;
+  background: 
+    repeating-linear-gradient(
+      45deg,
+      #FFE873 0px,
+      #FFE873 8px,
+      #FFD93D 8px,
+      #FFD93D 16px
+    );
+  border-radius: 0;
+  border: 4px solid #FFA400;
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 像素网格叠加 */
+.success-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
+/* 成功图标样式 */
+.success-header :deep(.el-icon) {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.2));
+  flex-shrink: 0;
+}
+
+.success-text {
+  position: relative;
+  z-index: 1;
 }
 
 .success-text h3 {
   margin: 0 0 8px 0;
   font-size: 20px;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 700;
   color: var(--color-text-primary);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.8);
 }
 
 .success-text p {
   margin: 0;
   font-size: 14px;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 500;
   color: var(--color-text-secondary);
 }
 
@@ -166,9 +207,10 @@ const handleCopyAll = async () => {
 }
 
 .card-key-text {
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
+  font-family: 'Pixelify Sans', 'Courier New', monospace;
+  font-weight: 600;
   color: var(--color-primary);
+  letter-spacing: 1px;
 }
 
 .dialog-footer {
@@ -182,7 +224,16 @@ const handleCopyAll = async () => {
   .success-header {
     flex-direction: column;
     text-align: center;
-    padding: 16px;
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .success-text h3 {
+    font-size: 18px;
+  }
+  
+  .success-text p {
+    font-size: 13px;
   }
   
   .dialog-footer {
