@@ -35,7 +35,7 @@
       
       <template #footer>
         <div class="dialog-footer">
-          <el-dropdown split-button type="primary" @click="handleExport('txt')" style="margin-right: 10px;">
+          <el-dropdown split-button type="primary" @click="handleExport('txt')">
             导出卡密
             <template #dropdown>
               <el-dropdown-menu>
@@ -216,8 +216,14 @@ const handleCopyAll = async () => {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.dialog-footer .el-dropdown,
+.dialog-footer .el-button {
+  margin: 0 !important;
 }
 
 @media (max-width: 768px) {
@@ -238,10 +244,15 @@ const handleCopyAll = async () => {
   
   .dialog-footer {
     flex-direction: column;
+    gap: 10px;
   }
   
-  .dialog-footer :deep(.el-button),
-  .dialog-footer :deep(.el-dropdown) {
+  .dialog-footer .el-button,
+  .dialog-footer .el-dropdown {
+    width: 100%;
+  }
+  
+  .dialog-footer :deep(.el-dropdown__button) {
     width: 100%;
   }
 }

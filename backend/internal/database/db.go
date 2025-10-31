@@ -64,6 +64,11 @@ func migrate() error {
 		return err
 	}
 
+	// 迁移 Card 表缺失的列
+	if err := migrateCardColumns(); err != nil {
+		log.Printf("Card表迁移警告: %v", err)
+	}
+
 	// 迁移现有项目，为其生成加密密钥
 	if err := migrateProjectEncryption(); err != nil {
 		log.Printf("项目加密字段迁移警告: %v", err)
@@ -205,6 +210,48 @@ func hashPasswordBcrypt(password string) string {
 func hashPasswordSHA256(password string) string {
 	hash := sha256.Sum256([]byte(password))
 	return hex.EncodeToString(hash[:])
+}
+
+func migrateCardColumns() error {
+	// 检查 cards 表是否存在
+	if !DB.Migrator().HasTable(&models.Card{}) {
+		return nil
+	}
+
+	// 定义需要检查的列及其默认值
+	columns := map[string]string{
+		"max_hwid":  "INTEGER DEFAULT -1",
+		"max_ip":    "INTEGER DEFAULT -1",
+		"hwid_list": "TEXT DEFAULT '[]'",
+		"ip_list":   "TEXT DEFAULT '[]'",
+		"frozen":    "INTEGER DEFAULT 0",
+	}
+
+	for columnName, columnDef := range columns {
+		// 检查列是否存在
+		var count int
+		err := DB.Raw(`
+			SELECT COUNT(*) 
+			FROM pragma_table_info('cards') 
+			WHERE name = ?
+		`, columnName).Scan(&count).Error
+
+		if err != nil {
+			return err
+		}
+
+		// 如果列不存在，则添加
+		if count == 0 {
+			sql := "ALTER TABLE cards ADD COLUMN " + columnName + " " + columnDef
+			if err := DB.Exec(sql).Error; err != nil {
+				log.Printf("添加列 %s 失败: %v", columnName, err)
+				return err
+			}
+			log.Printf("Card表迁移完成: 已添加列 %s", columnName)
+		}
+	}
+
+	return nil
 }
 
 func migrateProjectEncryption() error {

@@ -256,16 +256,20 @@ const handleLogout = () => {
   border-radius: 2px;
 }
 
+/* 菜单项基础样式 */
 :deep(.el-menu-item) {
   color: rgba(255, 255, 255, 0.65);
   margin: 4px 8px;
   border-radius: 0;
-  transition: all var(--duration-fast) steps(2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 48px;
   line-height: 48px;
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
 }
 
+/* 悬停效果 */
 :deep(.el-menu-item:hover) {
   color: #fff;
   background: rgba(255, 140, 66, 0.15) !important;
@@ -273,14 +277,32 @@ const handleLogout = () => {
   transform: translateX(2px);
 }
 
+/* 激活状态 - 流淌效果 */
 :deep(.el-menu-item.is-active) {
   color: #fff;
   background: linear-gradient(90deg, #FF8C42 0%, #FFD93D 100%) !important;
   box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);
   transform: translateX(0);
   border: 2px solid #FF6B35;
+  animation: menu-activate 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 激活动画 - 从左到右流淌 */
+@keyframes menu-activate {
+  0% {
+    background: linear-gradient(90deg, transparent 0%, transparent 100%);
+    box-shadow: none;
+  }
+  50% {
+    background: linear-gradient(90deg, #FF8C42 0%, transparent 50%, transparent 100%);
+  }
+  100% {
+    background: linear-gradient(90deg, #FF8C42 0%, #FFD93D 100%);
+    box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 激活指示器 */
 :deep(.el-menu-item.is-active::before) {
   content: '';
   position: absolute;
@@ -292,6 +314,44 @@ const handleLogout = () => {
   background: #FFD93D;
   border-radius: 0;
   box-shadow: 1px 0 0 0 #FF6B35;
+  animation: indicator-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 指示器滑动动画 */
+@keyframes indicator-slide {
+  0% {
+    height: 0;
+    opacity: 0;
+  }
+  50% {
+    height: 32px;
+    opacity: 0.5;
+  }
+  100% {
+    height: 24px;
+    opacity: 1;
+  }
+}
+
+/* 激活后的流光效果 */
+:deep(.el-menu-item.is-active::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  animation: shimmer 0.8s ease-out;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 /* 侧边栏底部 */

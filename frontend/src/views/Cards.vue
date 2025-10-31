@@ -89,7 +89,7 @@
       title="选择导出格式"
       :width="isMobile ? '95%' : '400px'"
     >
-      <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="export-button-group">
         <el-button type="primary" @click="handleExportFormat('json')">
           导出为 JSON
         </el-button>
@@ -518,10 +518,27 @@ onMounted(() => {
   transform: translateY(0);
 }
 
+/* 导出对话框按钮组 */
+.export-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-button-group .el-button {
+  width: 100%;
+  margin: 0;
+  justify-content: center;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .header-actions {
     margin-bottom: 16px;
+  }
+  
+  .export-button-group {
+    gap: 10px;
   }
 }
 </style>
