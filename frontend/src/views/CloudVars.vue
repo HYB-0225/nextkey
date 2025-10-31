@@ -1,11 +1,11 @@
 <template>
   <div class="page-container">
     <el-card>
-      <div class="header-actions">
+      <div class="header-actions action-buttons">
         <el-select 
           v-model="selectedProjectId" 
           placeholder="选择项目" 
-          :style="isMobile ? 'width: 100%; order: -1;' : 'width: 300px; margin-right: 10px;'" 
+          class="action-select"
           @change="loadCloudVars"
         >
           <el-option v-for="project in projects" :key="project.id" :label="project.name" :value="project.id" />
@@ -14,7 +14,7 @@
           <el-icon><Plus /></el-icon>
           添加变量
         </el-button>
-        <el-button type="success" @click="handleBatchImport" :disabled="!selectedProjectId" style="margin-left: 10px;">
+        <el-button type="success" @click="handleBatchImport" :disabled="!selectedProjectId">
           批量导入
         </el-button>
         <el-button type="danger" @click="handleBatchDelete" :disabled="selectedVars.length === 0">
@@ -204,10 +204,6 @@ onMounted(() => {
 }
 
 .header-actions {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -246,27 +242,10 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-/* 平板适配 */
-@media (min-width: 769px) and (max-width: 1023px) {
-  .header-actions {
-    gap: 10px;
-  }
-}
-
 /* 移动端适配 */
 @media (max-width: 768px) {
   .header-actions {
     margin-bottom: 16px;
-    gap: 8px;
-  }
-  
-  .header-actions :deep(.el-select) {
-    width: 100%;
-    order: -1;
-  }
-  
-  .header-actions :deep(.el-button) {
-    flex: 1;
   }
 }
 </style>

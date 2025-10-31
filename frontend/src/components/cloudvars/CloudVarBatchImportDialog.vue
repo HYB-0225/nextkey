@@ -64,7 +64,7 @@ const handleSave = () => {
 }
 
 :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   padding: 20px 24px;
   border-bottom: none;
 }
@@ -88,7 +88,7 @@ const handleSave = () => {
 }
 
 :deep(.el-alert--info) {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(255, 140, 66, 0.1);
   color: var(--color-primary);
 }
 
@@ -104,7 +104,7 @@ const handleSave = () => {
 
 :deep(.el-textarea.is-focus .el-textarea__inner) {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
   transform: translateY(-1px);
 }
 
@@ -124,7 +124,7 @@ const handleSave = () => {
 }
 
 :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   border: none;
 }
 

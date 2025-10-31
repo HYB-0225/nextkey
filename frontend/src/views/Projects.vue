@@ -7,12 +7,12 @@
     />
     
     <el-card class="main-card card-modern">
-      <div class="header-actions">
+      <div class="header-actions action-buttons">
         <el-button type="primary" @click="handleCreate">
           <el-icon><Plus /></el-icon>
           创建项目
         </el-button>
-        <el-button type="success" @click="handleBatchCreate" style="margin-left: 10px;">
+        <el-button type="success" @click="handleBatchCreate">
           批量创建
         </el-button>
         <el-button type="danger" @click="handleBatchDelete" :disabled="selectedProjects.length === 0">
@@ -213,10 +213,6 @@ onMounted(() => {
 }
 
 .header-actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -245,18 +241,10 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-/* 平板适配 */
-@media (min-width: 769px) and (max-width: 1023px) {
-  .header-actions {
-    gap: 10px;
-  }
-}
-
 /* 移动端适配 */
 @media (max-width: 768px) {
   .header-actions {
-    justify-content: flex-start;
-    gap: 8px;
+    margin-bottom: 16px;
   }
 }
 </style>

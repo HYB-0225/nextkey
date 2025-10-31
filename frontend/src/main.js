@@ -7,6 +7,7 @@ import router from './router'
 import App from './App.vue'
 import './styles/animations.css'
 import './styles/dialog.css'
+import './styles/element-pixel.css'
 
 const app = createApp(App)
 const pinia = createPinia()

@@ -1,0 +1,489 @@
+/**
+ * Element Plus 像素艺术风格覆盖
+ * 全局像素化UI组件
+ */
+
+/* ==================== 按钮像素化 ==================== */
+.el-button {
+  border-radius: 0 !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 600;
+  border-width: 3px;
+  border-style: solid;
+  transition: all 0.15s steps(2) !important;
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+.el-button:hover:not(.is-disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+.el-button:active:not(.is-disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2);
+}
+
+/* 主要按钮 */
+.el-button--primary {
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
+  border-color: #FF6B35;
+  color: #fff;
+}
+
+.el-button--primary:hover:not(.is-disabled) {
+  background: linear-gradient(135deg, #FFB380 0%, #FF8C42 100%);
+}
+
+/* 成功按钮 */
+.el-button--success {
+  background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%);
+  border-color: #FFA400;
+  color: #fff;
+}
+
+.el-button--success:hover:not(.is-disabled) {
+  background: linear-gradient(135deg, #FFE873 0%, #FFD93D 100%);
+}
+
+/* 警告按钮 */
+.el-button--warning {
+  background: linear-gradient(135deg, #FFA400 0%, #FF8C42 100%);
+  border-color: #FF8C42;
+  color: #fff;
+}
+
+.el-button--warning:hover:not(.is-disabled) {
+  background: linear-gradient(135deg, #FFD93D 0%, #FFB380 100%);
+}
+
+/* 危险按钮 */
+.el-button--danger {
+  background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
+  border-color: #A0522D;
+  color: #fff;
+}
+
+.el-button--danger:hover:not(.is-disabled) {
+  background: linear-gradient(135deg, #E67E30 0%, #D2691E 100%);
+}
+
+/* 信息按钮 */
+.el-button--info {
+  background: linear-gradient(135deg, #8B4513 0%, #6B3410 100%);
+  border-color: #6B3410;
+  color: #fff;
+}
+
+/* 文本按钮 */
+.el-button.is-text {
+  border: none;
+  box-shadow: none;
+}
+
+.el-button.is-text:hover:not(.is-disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 禁用按钮 */
+.el-button.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== 输入框像素化 ==================== */
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: inset 2px 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s steps(2) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-input__wrapper:hover {
+  border-color: var(--color-primary-light) !important;
+  box-shadow: inset 2px 2px 0 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+.el-input.is-focus .el-input__wrapper,
+.el-textarea.is-focus .el-textarea__inner {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.2),
+              inset 2px 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ==================== 选择器像素化 ==================== */
+.el-select__wrapper {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: inset 2px 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s steps(2) !important;
+}
+
+.el-select__wrapper:hover {
+  border-color: var(--color-primary-light) !important;
+}
+
+.el-select.is-focus .el-select__wrapper {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.2) !important;
+}
+
+/* 下拉菜单 */
+.el-select-dropdown {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+.el-select-dropdown__item {
+  border-radius: 0 !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-select-dropdown__item:hover {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+  transform: translateX(2px);
+}
+
+.el-select-dropdown__item.is-selected {
+  background-color: rgba(255, 140, 66, 0.2) !important;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ==================== 卡片像素化 ==================== */
+.el-card {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s steps(3) !important;
+}
+
+.el-card:hover {
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.15) !important;
+  transform: translate(-1px, -1px);
+}
+
+.el-card__header {
+  border-bottom: 3px solid var(--color-border) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 600;
+}
+
+/* ==================== 表格像素化 ==================== */
+.el-table {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-table__header th {
+  background-color: #FFD93D !important;
+  border-bottom: 3px solid var(--color-border) !important;
+  border-right: 2px solid var(--color-border) !important;
+  font-weight: 700;
+  color: var(--color-text-primary) !important;
+}
+
+.el-table__body tr {
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-table__body tr:hover {
+  background-color: rgba(255, 140, 66, 0.08) !important;
+  transform: translateX(2px);
+}
+
+.el-table td {
+  border-bottom: 2px solid var(--color-border-light) !important;
+  border-right: 1px solid var(--color-border-light) !important;
+}
+
+.el-table__empty-text {
+  font-family: 'Pixelify Sans', sans-serif;
+  color: var(--color-text-tertiary);
+}
+
+/* ==================== 标签像素化 ==================== */
+.el-tag {
+  border-radius: 0 !important;
+  border: 2px solid transparent !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+/* ==================== 复选框像素化 ==================== */
+.el-checkbox__inner {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary-dark) !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== 单选框像素化 ==================== */
+.el-radio__inner {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary-dark) !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+.el-radio__input.is-checked .el-radio__inner::after {
+  width: 6px;
+  height: 6px;
+  background-color: #fff;
+}
+
+/* ==================== 开关像素化 ==================== */
+.el-switch {
+  border-radius: 0 !important;
+}
+
+.el-switch__core {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: inset 1px 1px 0 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s steps(2) !important;
+}
+
+.el-switch.is-checked .el-switch__core {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary-dark) !important;
+}
+
+/* ==================== 分页像素化 ==================== */
+.el-pagination button,
+.el-pager li {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.1) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  transition: all 0.1s steps(2) !important;
+  margin: 0 3px;
+}
+
+.el-pagination button:hover:not(.is-disabled),
+.el-pager li:hover:not(.is-active) {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+.el-pager li.is-active {
+  background-color: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary-dark) !important;
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ==================== 对话框像素化 ==================== */
+.el-dialog {
+  border-radius: 0 !important;
+  border: 4px solid var(--color-primary) !important;
+  box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.el-dialog__header {
+  border-radius: 0 !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-dialog__body {
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+/* ==================== 消息提示像素化 ==================== */
+.el-message {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.2) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-message--success {
+  border-color: #FFD93D !important;
+  background-color: rgba(255, 217, 61, 0.1) !important;
+}
+
+.el-message--warning {
+  border-color: #FFA400 !important;
+  background-color: rgba(255, 164, 0, 0.1) !important;
+}
+
+.el-message--error {
+  border-color: #D2691E !important;
+  background-color: rgba(210, 105, 30, 0.1) !important;
+}
+
+.el-message--info {
+  border-color: #FF8C42 !important;
+  background-color: rgba(255, 140, 66, 0.1) !important;
+}
+
+/* ==================== 弹出确认框像素化 ==================== */
+.el-message-box {
+  border-radius: 0 !important;
+  border: 4px solid var(--color-primary) !important;
+  box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.3) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-message-box__header {
+  border-bottom: 3px solid var(--color-border) !important;
+}
+
+/* ==================== 日期选择器像素化 ==================== */
+.el-date-editor {
+  border-radius: 0 !important;
+}
+
+.el-date-editor .el-range-editor {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: inset 2px 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.el-picker-panel {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.2) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-date-table td.available:hover {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+}
+
+.el-date-table td.today span {
+  color: var(--color-primary) !important;
+  font-weight: 700;
+}
+
+.el-date-table td.current:not(.disabled) span {
+  background-color: var(--color-primary) !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== 提示框像素化 ==================== */
+.el-tooltip__popper {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+/* ==================== 下拉菜单像素化 ==================== */
+.el-dropdown-menu {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+.el-dropdown-menu__item {
+  border-radius: 0 !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+  transform: translateX(2px);
+}
+
+/* ==================== 折叠面板像素化 ==================== */
+.el-collapse {
+  border-radius: 0 !important;
+  border: 3px solid var(--color-border) !important;
+}
+
+.el-collapse-item__header {
+  border-radius: 0 !important;
+  border-bottom: 2px solid var(--color-border-light) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+  font-weight: 600;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-collapse-item__header:hover {
+  background-color: rgba(255, 140, 66, 0.05) !important;
+}
+
+/* ==================== 加载动画像素化 ==================== */
+.el-loading-spinner {
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-loading-spinner .circular {
+  animation: loading-rotate 2s steps(8) infinite !important;
+}
+
+/* ==================== 输入数字框像素化 ==================== */
+.el-input-number {
+  border-radius: 0 !important;
+}
+
+.el-input-number__decrease,
+.el-input-number__increase {
+  border-radius: 0 !important;
+  border: 2px solid var(--color-border) !important;
+  transition: all 0.1s steps(2) !important;
+}
+
+.el-input-number__decrease:hover,
+.el-input-number__increase:hover {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+}
+
+/* ==================== 滚动条像素化 ==================== */
+.el-scrollbar__thumb {
+  border-radius: 0 !important;
+  background-color: var(--color-primary) !important;
+  opacity: 0.5;
+}
+
+.el-scrollbar__thumb:hover {
+  opacity: 0.8;
+}
+
+/* ==================== Alert 提醒像素化 ==================== */
+.el-alert {
+  border-radius: 0 !important;
+  border: 2px solid transparent !important;
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.1) !important;
+  font-family: 'Pixelify Sans', sans-serif;
+}
+
+.el-alert--success {
+  border-color: #FFD93D !important;
+}
+
+.el-alert--warning {
+  border-color: #FFA400 !important;
+}
+
+.el-alert--error {
+  border-color: #D2691E !important;
+}
+
+.el-alert--info {
+  border-color: #FF8C42 !important;
+}
+

@@ -367,7 +367,7 @@ export function pageSlideOut(element, direction = 'left') {
  * @param {Element} element - 要动画的元素
  * @param {String} color - 高亮颜色
  */
-export function highlight(element, color = '#1890ff') {
+export function highlight(element, color = '#FF8C42') {
   const originalBg = window.getComputedStyle(element).backgroundColor
 
   return gsap.fromTo(

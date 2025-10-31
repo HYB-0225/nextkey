@@ -5,24 +5,27 @@
 
 /* ==================== CSS 变量系统 ==================== */
 :root {
-  /* 颜色系统 */
-  --color-primary: #1890ff;
-  --color-primary-light: #40a9ff;
-  --color-primary-dark: #096dd9;
+  /* 颜色系统 - 暖色调像素艺术风格 */
+  --color-primary: #FF8C42;
+  --color-primary-light: #FFB380;
+  --color-primary-dark: #FF6B35;
+  --color-secondary: #FFD93D;
+  --color-secondary-light: #FFE873;
+  --color-secondary-dark: #FFA400;
   --color-success: #52c41a;
-  --color-warning: #faad14;
+  --color-warning: #FFA400;
   --color-danger: #ff4d4f;
-  --color-info: #1890ff;
+  --color-info: #FF8C42;
   
-  /* 中性色 */
-  --color-text-primary: #262626;
-  --color-text-secondary: #595959;
-  --color-text-tertiary: #8c8c8c;
-  --color-border: #d9d9d9;
-  --color-border-light: #f0f0f0;
-  --color-bg: #ffffff;
-  --color-bg-secondary: #fafafa;
-  --color-bg-tertiary: #f5f5f5;
+  /* 中性色 - 暖色调 */
+  --color-text-primary: #3d2817;
+  --color-text-secondary: #6b4423;
+  --color-text-tertiary: #8B4513;
+  --color-border: #e8d5c4;
+  --color-border-light: #f5ebe0;
+  --color-bg: #FFFBF0;
+  --color-bg-secondary: #FFF5E6;
+  --color-bg-tertiary: #FFEFD5;
   
   /* 圆角 */
   --radius-xs: 4px;
@@ -338,7 +341,7 @@
 
 /* ==================== 渐变文本 ==================== */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -603,5 +606,224 @@
 
 .highlight-flash {
   animation: highlight-flash 1s var(--ease-smooth);
+}
+
+/* ==================== 像素艺术风格 ==================== */
+/* 像素化边框 */
+.pixel-border {
+  border: 3px solid var(--color-primary);
+  box-shadow: 
+    0 0 0 1px var(--color-primary-dark),
+    inset 0 0 0 1px var(--color-primary-light);
+  border-radius: 0;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.pixel-border-light {
+  border: 2px solid var(--color-border);
+  box-shadow: 
+    0 0 0 1px var(--color-border-light),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  border-radius: 0;
+}
+
+/* 像素化按钮 */
+.pixel-button {
+  border-radius: 0;
+  border: 3px solid var(--color-primary-dark);
+  box-shadow: 
+    4px 4px 0 0 var(--color-primary-dark),
+    4px 4px 0 3px rgba(0, 0, 0, 0.1);
+  transition: all var(--duration-fast) steps(2);
+}
+
+.pixel-button:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 
+    2px 2px 0 0 var(--color-primary-dark),
+    2px 2px 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.pixel-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 
+    0 0 0 0 var(--color-primary-dark),
+    0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 像素化卡片 */
+.pixel-card {
+  border-radius: 0;
+  border: 3px solid var(--color-border);
+  box-shadow: 
+    6px 6px 0 0 rgba(0, 0, 0, 0.08),
+    0 0 0 1px var(--color-border-light) inset;
+  transition: all var(--duration-normal) steps(3);
+}
+
+.pixel-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 
+    8px 8px 0 0 rgba(0, 0, 0, 0.12),
+    0 0 0 1px var(--color-border-light) inset;
+}
+
+/* 像素化输入框 */
+.pixel-input {
+  border-radius: 0;
+  border: 2px solid var(--color-border);
+  box-shadow: 
+    inset 2px 2px 0 0 rgba(0, 0, 0, 0.05),
+    0 0 0 1px var(--color-border-light);
+  transition: border-color var(--duration-fast) steps(2);
+}
+
+.pixel-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 
+    inset 2px 2px 0 0 rgba(0, 0, 0, 0.05),
+    0 0 0 3px rgba(255, 140, 66, 0.2);
+}
+
+/* 像素化阴影 */
+.pixel-shadow-sm {
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.pixel-shadow-md {
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.12);
+}
+
+.pixel-shadow-lg {
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.15);
+}
+
+/* CRT扫描线效果（可选） */
+.crt-scanlines {
+  position: relative;
+}
+
+.crt-scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    transparent 1px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 像素化渐变背景 */
+.pixel-gradient-warm {
+  background: 
+    linear-gradient(135deg, 
+      #FF8C42 0%, 
+      #FFD93D 50%, 
+      #FF6B35 100%
+    );
+  image-rendering: pixelated;
+}
+
+/* 像素网格效果 */
+.pixel-grid {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+/* 像素化文本阴影 */
+.pixel-text-shadow {
+  text-shadow: 
+    2px 2px 0 var(--color-primary-dark),
+    4px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* 像素化悬浮效果 */
+.pixel-hover {
+  transition: transform var(--duration-fast) steps(2);
+}
+
+.pixel-hover:hover {
+  transform: translate(-2px, -2px);
+}
+
+/* 8-bit风格脉冲 */
+@keyframes pixel-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--color-primary);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--color-primary);
+  }
+}
+
+.pixel-pulse {
+  animation: pixel-pulse 1s steps(4) infinite;
+}
+
+/* ==================== 统一按钮组布局 ==================== */
+/* 按钮组容器 - 解决响应式折叠对齐问题 */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* 移除按钮的 margin-left，统一使用 gap */
+.action-buttons .el-button {
+  margin-left: 0 !important;
+}
+
+/* 选择器容器 */
+.action-select {
+  min-width: 200px;
+}
+
+/* 响应式：平板 */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .action-buttons {
+    gap: 8px;
+  }
+  
+  .action-select {
+    min-width: 160px;
+  }
+}
+
+/* 响应式：移动端 */
+@media (max-width: 768px) {
+  .action-buttons {
+    gap: 8px;
+  }
+  
+  .action-buttons .el-button {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+  
+  .action-buttons .el-button:only-child {
+    flex: 1 1 100%;
+  }
+  
+  .action-select {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* 小屏手机：按钮占满宽 */
+@media (max-width: 480px) {
+  .action-buttons .el-button {
+    flex: 1 1 100%;
+  }
 }
 

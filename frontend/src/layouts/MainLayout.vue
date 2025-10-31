@@ -178,10 +178,10 @@ const handleLogout = () => {
 
 /* ==================== 侧边栏 ==================== */
 .sidebar {
-  background: linear-gradient(180deg, #001529 0%, #000c17 100%);
+  background: linear-gradient(180deg, #3d2817 0%, #2a1810 100%);
   color: #fff;
   transition: all var(--duration-normal) var(--ease-out);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 0 0 rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 100;
   display: flex;
@@ -213,12 +213,13 @@ const handleLogout = () => {
 .logo-icon {
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0;
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.4);
+  border: 2px solid #FFD93D;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -258,35 +259,39 @@ const handleLogout = () => {
 :deep(.el-menu-item) {
   color: rgba(255, 255, 255, 0.65);
   margin: 4px 8px;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) var(--ease-out);
+  border-radius: 0;
+  transition: all var(--duration-fast) steps(2);
   height: 48px;
   line-height: 48px;
+  border: 2px solid transparent;
 }
 
 :deep(.el-menu-item:hover) {
   color: #fff;
-  background: rgba(255, 255, 255, 0.08) !important;
-  transform: translateX(4px);
+  background: rgba(255, 140, 66, 0.15) !important;
+  border-color: rgba(255, 140, 66, 0.3);
+  transform: translateX(2px);
 }
 
 :deep(.el-menu-item.is-active) {
   color: #fff;
-  background: linear-gradient(90deg, #1890ff 0%, #36cfc9 100%) !important;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  background: linear-gradient(90deg, #FF8C42 0%, #FFD93D 100%) !important;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);
   transform: translateX(0);
+  border: 2px solid #FF6B35;
 }
 
 :deep(.el-menu-item.is-active::before) {
   content: '';
   position: absolute;
-  left: 0;
+  left: -2px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
+  width: 4px;
   height: 24px;
-  background: #fff;
-  border-radius: 0 2px 2px 0;
+  background: #FFD93D;
+  border-radius: 0;
+  box-shadow: 1px 0 0 0 #FF6B35;
 }
 
 /* 侧边栏底部 */

@@ -1,7 +1,7 @@
 <template>
   <div class="stats-grid">
-    <div class="stat-card card-modern hover-lift stagger-item">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="stat-card pixel-card stagger-item">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%); border: 2px solid #FFD93D; box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);">
         <el-icon><Box /></el-icon>
       </div>
       <div class="stat-content">
@@ -10,8 +10,8 @@
       </div>
     </div>
     
-    <div class="stat-card card-modern hover-lift stagger-item">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+    <div class="stat-card pixel-card stagger-item">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%); border: 2px solid #FFE873; box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);">
         <el-icon><Money /></el-icon>
       </div>
       <div class="stat-content">
@@ -20,8 +20,8 @@
       </div>
     </div>
     
-    <div class="stat-card card-modern hover-lift stagger-item">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+    <div class="stat-card pixel-card stagger-item">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #FFA400 0%, #FF8C42 100%); border: 2px solid #FFD93D; box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);">
         <el-icon><Coin /></el-icon>
       </div>
       <div class="stat-content">
@@ -30,8 +30,8 @@
       </div>
     </div>
     
-    <div class="stat-card card-modern hover-lift stagger-item">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+    <div class="stat-card pixel-card stagger-item">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%); border: 2px solid #E67E30; box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.3);">
         <el-icon><TrendCharts /></el-icon>
       </div>
       <div class="stat-content">
@@ -74,28 +74,27 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #fff;
-  border-radius: var(--radius-lg);
-  transition: all var(--duration-normal) var(--ease-out);
-  border: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-bg);
+  border-radius: 0;
+  transition: all var(--duration-fast) steps(2);
+  border: 3px solid var(--color-border);
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.1);
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.15);
+  transform: translate(-2px, -2px);
 }
 
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
 }
 

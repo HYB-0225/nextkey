@@ -314,7 +314,7 @@ const getPerformanceLabel = (performance) => {
 }
 
 :deep(.el-switch) {
-  --el-switch-on-color: #667eea;
+  --el-switch-on-color: #FF8C42;
 }
 
 .form-tip {

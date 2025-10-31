@@ -181,19 +181,19 @@ const getRowActions = (row) => [
 }
 
 :deep(.el-tag.el-tag--success) {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%);
   border: none;
   color: #fff;
 }
 
 :deep(.el-tag.el-tag--info) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   border: none;
   color: #fff;
 }
 
 :deep(.el-tag.el-tag--danger) {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
   border: none;
   color: #fff;
 }

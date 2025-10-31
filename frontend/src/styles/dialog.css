@@ -93,68 +93,68 @@
 }
 
 /* ==================== 渐变头部主题 ==================== */
-/* 主题色 - 紫色 */
+/* 主题色 - 暖橙色 */
 .modern-dialog.theme-primary :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   padding: 24px;
   border-bottom: none;
 }
 
 .modern-dialog.theme-primary :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
   border: none;
 }
 
 .modern-dialog.theme-primary :deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #7c8ef0 0%, #8b5bb0 100%);
+  background: linear-gradient(135deg, #FFB380 0%, #FF8C42 100%);
 }
 
-/* 主题色 - 绿色 */
+/* 主题色 - 黄橙色 */
 .modern-dialog.theme-success :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%);
   padding: 24px;
   border-bottom: none;
 }
 
 .modern-dialog.theme-success :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%);
   border: none;
 }
 
 .modern-dialog.theme-success :deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #6bd132 0%, #8ae04d 100%);
+  background: linear-gradient(135deg, #FFE873 0%, #FFD93D 100%);
 }
 
-/* 主题色 - 蓝色 */
+/* 主题色 - 棕橙色 */
 .modern-dialog.theme-info :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+  background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
   padding: 24px;
   border-bottom: none;
 }
 
 .modern-dialog.theme-info :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+  background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
   border: none;
 }
 
 .modern-dialog.theme-info :deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #40a9ff 0%, #5cdbd3 100%);
+  background: linear-gradient(135deg, #E67E30 0%, #D2691E 100%);
 }
 
-/* 主题色 - 橙色 */
+/* 主题色 - 亮橙色 */
 .modern-dialog.theme-warning :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #fa8c16 0%, #faad14 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FFD93D 100%);
   padding: 24px;
   border-bottom: none;
 }
 
 .modern-dialog.theme-warning :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #fa8c16 0%, #faad14 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #FFD93D 100%);
   border: none;
 }
 
 .modern-dialog.theme-warning :deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #ffa940 0%, #ffc53d 100%);
+  background: linear-gradient(135deg, #FFB380 0%, #FFE873 100%);
 }
 
 /* ==================== 移动端适配 ==================== */
