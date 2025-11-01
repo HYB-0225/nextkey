@@ -132,34 +132,6 @@ type CardResponse struct {
 	IsExpired bool   `json:"is_expired"`
 }
 
-func (s *CardService) List(projectID uint, page, pageSize int) ([]CardResponse, int64, error) {
-	var cards []models.Card
-	var total int64
-
-	query := database.DB.Model(&models.Card{})
-	if projectID > 0 {
-		query = query.Where("project_id = ?", projectID)
-	}
-
-	query.Count(&total)
-
-	offset := (page - 1) * pageSize
-	if err := query.Offset(offset).Limit(pageSize).Find(&cards).Error; err != nil {
-		return nil, 0, err
-	}
-
-	responses := make([]CardResponse, len(cards))
-	for i, card := range cards {
-		responses[i] = CardResponse{
-			Card:      card,
-			Status:    card.GetStatus(),
-			IsExpired: card.IsExpired(),
-		}
-	}
-
-	return responses, total, nil
-}
-
 func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, int64, error) {
 	var cards []models.Card
 	var total int64

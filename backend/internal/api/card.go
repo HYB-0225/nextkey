@@ -88,39 +88,24 @@ func ListCards(c *gin.Context) {
 
 	cardSvc := service.NewCardService()
 
-	if keyword != "" || cardType != "" || note != "" || customData != "" || activated != "" || frozen != "" || expired != "" || hwid != "" || ip != "" || startTime != "" || endTime != "" {
-		filter := &service.CardListFilter{
-			ProjectID:  uint(projectID),
-			Keyword:    keyword,
-			CardType:   cardType,
-			Note:       note,
-			CustomData: customData,
-			Activated:  activated,
-			Frozen:     frozen,
-			Expired:    expired,
-			HWID:       hwid,
-			IP:         ip,
-			StartTime:  startTime,
-			EndTime:    endTime,
-			Page:       page,
-			PageSize:   pageSize,
-		}
-
-		cards, total, err := cardSvc.ListWithFilter(filter)
-		if err != nil {
-			utils.Error(c, 500, err.Error())
-			return
-		}
-
-		utils.Success(c, gin.H{
-			"list":  cards,
-			"total": total,
-			"page":  page,
-		})
-		return
+	filter := &service.CardListFilter{
+		ProjectID:  uint(projectID),
+		Keyword:    keyword,
+		CardType:   cardType,
+		Note:       note,
+		CustomData: customData,
+		Activated:  activated,
+		Frozen:     frozen,
+		Expired:    expired,
+		HWID:       hwid,
+		IP:         ip,
+		StartTime:  startTime,
+		EndTime:    endTime,
+		Page:       page,
+		PageSize:   pageSize,
 	}
 
-	cards, total, err := cardSvc.List(uint(projectID), page, pageSize)
+	cards, total, err := cardSvc.ListWithFilter(filter)
 	if err != nil {
 		utils.Error(c, 500, err.Error())
 		return
