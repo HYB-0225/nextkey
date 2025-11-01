@@ -5,7 +5,11 @@ import { refreshToken as refreshTokenAPI } from '@/api/auth'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('admin_token') || '')
   const refreshToken = ref(localStorage.getItem('admin_refresh_token') || '')
-  const tokenExpiresAt = ref(null)
+  const tokenExpiresAt = ref(
+    localStorage.getItem('admin_token_expires_at') 
+      ? parseInt(localStorage.getItem('admin_token_expires_at')) 
+      : null
+  )
   const refreshTimer = ref(null)
   
   const isLoggedIn = computed(() => !!token.value)
@@ -35,8 +39,8 @@ export const useAuthStore = defineStore('auth', () => {
         refresh_token: refreshToken.value
       })
       
-      const { access_token, refresh_token } = response
-      setTokens(access_token, refresh_token)
+      const { access_token, refresh_token, expires_in } = response
+      setTokens(access_token, refresh_token, expires_in)
     } catch (error) {
       console.error('Auto refresh failed:', error)
       logout()
@@ -71,6 +75,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Calculate expiration time (expiresIn is in seconds)
     tokenExpiresAt.value = Date.now() + (expiresIn * 1000)
+    localStorage.setItem('admin_token_expires_at', tokenExpiresAt.value)
     
     // Schedule the next refresh
     scheduleTokenRefresh()
@@ -83,6 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     tokenExpiresAt.value = null
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_refresh_token')
+    localStorage.removeItem('admin_token_expires_at')
   }
   
   return {
