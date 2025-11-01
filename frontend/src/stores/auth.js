@@ -91,6 +91,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('admin_token_expires_at')
   }
   
+  // Schedule refresh on store initialization if token exists
+  if (token.value && tokenExpiresAt.value) {
+    scheduleTokenRefresh()
+  }
+  
   return {
     token,
     refreshToken,
