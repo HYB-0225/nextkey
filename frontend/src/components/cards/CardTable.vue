@@ -13,11 +13,11 @@
         </el-table-column>
         <el-table-column label="状态" width="120">
           <template #default="{ row }">
-            <el-tag v-if="row.is_online" type="success" size="small" effect="dark">
-              在线
-            </el-tag>
-            <el-tag v-else-if="row.status === 'frozen'" type="danger" size="small">
+            <el-tag v-if="row.status === 'frozen'" type="danger" size="small">
               已冻结
+            </el-tag>
+            <el-tag v-else-if="row.is_online" type="success" size="small" effect="dark">
+              在线
             </el-tag>
             <el-tag v-else-if="row.is_expired && row.status === 'activated'" type="warning" size="small">
               已过期

@@ -29,11 +29,20 @@
           </CopyableText>
         </div>
         <div class="status-tags">
-          <el-tag v-if="card.is_online" type="success" size="small" effect="dark">
+          <el-tag v-if="card.status === 'frozen'" type="danger" size="small">
+            已冻结
+          </el-tag>
+          <el-tag v-else-if="card.is_online" type="success" size="small" effect="dark">
             在线
           </el-tag>
-          <el-tag v-else :type="card.activated ? 'success' : 'info'" size="small">
-            {{ card.activated ? '已激活' : '未激活' }}
+          <el-tag v-else-if="card.is_expired && card.status === 'activated'" type="warning" size="small">
+            已过期
+          </el-tag>
+          <el-tag v-else-if="card.activated" type="success" size="small">
+            已激活
+          </el-tag>
+          <el-tag v-else type="info" size="small">
+            未激活
           </el-tag>
         </div>
       </div>
