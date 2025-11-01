@@ -90,6 +90,22 @@ admin:
 - `encryption_scheme`: 加密方案（默认aes-256-gcm）
 - `encryption_key`: 项目独立的加密密钥（64字符十六进制，自动生成）
 
+**支持的加密方案**:
+
+| 加密方案 | 安全等级 | 性能 | 推荐场景 |
+|---------|---------|------|---------|
+| aes-256-gcm | secure | medium | 生产环境（默认推荐） |
+| chacha20-poly1305 | secure | fast | 移动端、嵌入式设备 |
+| rc4 | insecure | fast | 已废弃（不推荐） |
+| xor | insecure | fast | 已废弃（不推荐） |
+| custom-base64 | insecure | fast | 开发调试 |
+
+**加密方案管理**:
+- 创建项目时自动使用默认加密方案（aes-256-gcm）
+- 可通过管理后台API更新项目加密方案
+- 更新加密方案会自动生成新的密钥
+- 每个项目拥有独立的加密密钥，确保项目间数据隔离
+
 ### 解绑记录表（UnbindRecord）
 
 记录所有解绑操作历史：
@@ -271,6 +287,63 @@ SQLite 在高并发时可能出现锁定，考虑:
 7. **卡密冻结**: 发现异常行为时及时冻结相关卡密
 8. **日志审计**: 定期检查日志，发现可疑活动
 9. **项目加密**: 每个项目使用独立的加密密钥，确保项目间数据隔离
+10. **加密方案选择**: 生产环境必须使用 `secure` 级别的加密方案（aes-256-gcm 或 chacha20-poly1305）
+11. **加密密钥轮换**: 定期更新项目加密密钥，增强安全性
+
+## 加密方案配置
+
+### 查看支持的加密方案
+
+访问API接口查看服务端支持的所有加密方案：
+
+```bash
+curl http://localhost:8080/api/crypto/schemes
+```
+
+### 更新项目加密方案
+
+通过管理后台API更新项目的加密方案：
+
+```bash
+curl -X POST http://localhost:8080/admin/projects/{project_id}/encryption \
+  -H "Authorization: Bearer {admin_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"encryption_scheme": "chacha20-poly1305"}'
+```
+
+**注意事项**:
+- 更新加密方案会自动生成新的加密密钥
+- 需要通知所有客户端更新配置
+- 建议在无活跃用户时进行操作
+- 旧密钥的客户端将无法连接
+
+### 加密方案迁移步骤
+
+1. **准备阶段**
+   - 通知所有用户即将进行系统维护
+   - 确认无活跃用户连接
+
+2. **执行迁移**
+   ```bash
+   # 更新项目加密方案
+   curl -X POST http://localhost:8080/admin/projects/1/encryption \
+     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d '{"encryption_scheme": "chacha20-poly1305"}'
+   ```
+
+3. **更新客户端**
+   - 获取新的加密密钥
+   - 更新客户端配置文件
+   - 分发新版本客户端
+
+4. **验证测试**
+   - 使用测试卡密验证新配置
+   - 确认加密通信正常
+
+5. **恢复服务**
+   - 通知用户更新客户端
+   - 监控系统运行状态
 
 ## 系统要求
 

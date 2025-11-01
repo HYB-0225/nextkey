@@ -18,7 +18,52 @@
 
 ## 加密通信
 
-客户端API（`/api/*`）需要使用AES-256-GCM加密通信。
+客户端API（`/api/*`）需要使用加密通信。服务端支持多种加密方案，每个项目可独立配置加密方案和密钥。
+
+### 获取加密方案
+
+**接口**: `GET /api/crypto/schemes`
+
+**无需认证**: 此接口公开访问
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "scheme": "aes-256-gcm",
+      "name": "AES-256-GCM",
+      "description": "AES-256-GCM 加密（推荐）",
+      "security_level": "secure",
+      "performance": "fast",
+      "is_deprecated": false
+    },
+    {
+      "scheme": "chacha20-poly1305",
+      "name": "ChaCha20-Poly1305",
+      "description": "ChaCha20-Poly1305 加密",
+      "security_level": "secure",
+      "performance": "fast",
+      "is_deprecated": false
+    },
+    {
+      "scheme": "xor",
+      "name": "XOR",
+      "description": "XOR 加密（仅用于测试）",
+      "security_level": "insecure",
+      "performance": "fast",
+      "is_deprecated": false
+    }
+  ]
+}
+```
+
+**使用说明**:
+- 客户端应在首次连接时调用此接口获取服务端支持的加密方案
+- 根据项目配置使用对应的加密方案和密钥
+- 默认加密方案为 `aes-256-gcm`
 
 ### 请求格式
 
@@ -26,14 +71,14 @@
 {
   "timestamp": 1698505200,
   "nonce": "随机32字符串",
-  "data": "Base64编码的AES加密数据"
+  "data": "Base64编码的加密数据"
 }
 ```
 
 ### 加密流程
 
 1. 准备请求数据（JSON格式）
-2. 使用AES-256-GCM加密
+2. 使用项目配置的加密方案加密数据
 3. Base64编码
 4. 组装完整请求
 
@@ -42,8 +87,10 @@
 1. 服务端验证timestamp（±5分钟）
 2. 验证nonce（防重放）
 3. Base64解码
-4. AES-256-GCM解密
+4. 根据项目配置的加密方案解密数据
 5. 解析JSON数据
+
+**注意**: 不同加密方案的具体解密细节由服务端自动处理，客户端只需使用正确的加密方案和密钥即可
 
 ### 响应格式
 
@@ -52,7 +99,7 @@
 ```json
 {
   "nonce": "客户端请求时发送的nonce",
-  "data": "Base64编码的AES加密响应数据"
+  "data": "Base64编码的加密响应数据"
 }
 ```
 
@@ -61,12 +108,51 @@
 1. 客户端发送请求时记录发送的nonce
 2. 收到响应后，验证响应中的`nonce`字段是否与发送的一致
 3. Base64解码`data`字段
-4. 使用AES-256-GCM解密
+4. 使用项目配置的加密方案解密数据
 5. 解析JSON获取实际的响应数据（包含`code`、`message`、`data`字段）
 
 **安全性**: 此机制防止攻击者将旧的有效响应重放给新的请求，即使响应被抓包，也无法用于其他请求。
 
 ## 客户端 API
+
+### 0. 获取加密方案列表
+
+**接口**: `GET /api/crypto/schemes`
+
+**需要加密**: 否
+
+**需要认证**: 否
+
+**响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "scheme": "aes-256-gcm",
+      "name": "AES-256-GCM",
+      "description": "AES-256-GCM 加密（推荐）",
+      "security_level": "secure",
+      "performance": "fast",
+      "is_deprecated": false
+    },
+    {
+      "scheme": "chacha20-poly1305",
+      "name": "ChaCha20-Poly1305",
+      "description": "ChaCha20-Poly1305 加密",
+      "security_level": "secure",
+      "performance": "fast",
+      "is_deprecated": false
+    }
+  ]
+}
+```
+
+**使用场景**:
+- 客户端初始化时获取服务端支持的加密方案
+- 用于验证项目配置的加密方案是否被服务端支持
+- 可用于动态选择加密方案（如果客户端支持多种方案）
 
 ### 1. 卡密登录
 
@@ -402,6 +488,36 @@
   "ids": [1, 2, 3]
 }
 ```
+
+#### 更新项目加密方案
+
+**接口**: `POST /admin/projects/:id/encryption`
+
+**需要认证**: 是
+
+**请求参数**:
+```json
+{
+  "encryption_scheme": "chacha20-poly1305"
+}
+```
+
+**响应数据**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "encryption_scheme": "chacha20-poly1305",
+    "encryption_key": "新生成的64字符十六进制密钥"
+  }
+}
+```
+
+**注意事项**:
+- 更新加密方案会自动生成新的加密密钥
+- 更新后需要通知所有客户端使用新的加密方案和密钥
+- 建议在无活跃用户时进行更新操作
 
 ### 3. 卡密管理
 

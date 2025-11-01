@@ -18,7 +18,7 @@
 ### 5分钟快速对接流程
 
 1. **获取配置信息**
-   - 在管理后台创建项目，获取 `project_uuid` 和 `encryption_key`
+   - 在管理后台创建项目，获取 `project_uuid`、`encryption_scheme` 和 `encryption_key`
    - 生成测试卡密
 
 2. **安装依赖** (以Python为例)
@@ -33,7 +33,8 @@
    client = NextKeyClient(
        server_url="http://localhost:8080",
        project_uuid="your-project-uuid",
-       aes_key="your-encryption-key-from-admin"
+       encryption_scheme="aes-256-gcm",  # 项目配置的加密方案
+       encryption_key="your-encryption-key-from-admin"
    )
    
    # 登录
@@ -48,6 +49,26 @@
 
 4. **运行测试**
    - 使用测试工具验证对接: `python tools/gui-test-client.py`
+
+### 获取服务端支持的加密方案
+
+在初始化客户端前，可以先获取服务端支持的加密方案列表：
+
+```python
+import requests
+
+response = requests.get("http://localhost:8080/api/crypto/schemes")
+schemes = response.json()
+
+# 输出示例:
+# {
+#   "code": 0,
+#   "data": [
+#     {"scheme": "aes-256-gcm", "name": "AES-256-GCM", "security_level": "secure"},
+#     {"scheme": "chacha20-poly1305", "name": "ChaCha20-Poly1305", "security_level": "secure"}
+#   ]
+# }
+```
 
 ---
 
@@ -110,14 +131,43 @@ encryption_key = os.environ.get('NEXTKEY_ENCRYPTION_KEY')
 
 ## 加密通信详解
 
-客户端API（`/api/*` 路径）需要使用 **AES-256-GCM** 加密通信。
+客户端API（`/api/*` 路径）需要使用加密通信。NextKey 支持多种加密方案，每个项目可以独立配置加密方案和密钥。
 
-### 加密算法
+### 支持的加密方案
+
+NextKey 目前支持以下加密方案：
+
+| 加密方案 | 安全等级 | 性能 | 推荐场景 |
+|---------|---------|------|---------|
+| **aes-256-gcm** | secure | medium | 生产环境（推荐） |
+| **chacha20-poly1305** | secure | fast | 移动端、嵌入式设备 |
+| **rc4** | insecure | fast | 已废弃（不推荐使用） |
+| **xor** | insecure | fast | 已废弃（不推荐使用） |
+| **custom-base64** | insecure | fast | 开发调试（仅用于测试） |
+
+**获取加密方案列表**:
+```bash
+curl http://localhost:8080/api/crypto/schemes
+```
+
+### 加密算法详解
+
+#### AES-256-GCM (推荐)
 
 - **算法**: AES-256-GCM (Galois/Counter Mode)
 - **密钥长度**: 32字节 (256位)
 - **Nonce**: 12字节随机值（由GCM自动生成）
+- **认证**: 内置消息认证码（MAC）
 - **编码**: Base64
+
+#### ChaCha20-Poly1305
+
+- **算法**: ChaCha20-Poly1305 AEAD
+- **密钥长度**: 32字节 (256位)
+- **Nonce**: 12字节随机值
+- **认证**: Poly1305 MAC
+- **编码**: Base64
+- **优势**: 在无硬件加速的设备上性能优于AES
 
 ### 请求格式
 
@@ -136,7 +186,7 @@ encryption_key = os.environ.get('NEXTKEY_ENCRYPTION_KEY')
 
 ### 加密流程详解
 
-#### Python实现
+#### Python实现 (AES-256-GCM)
 
 ```python
 from Crypto.Cipher import AES
@@ -145,9 +195,9 @@ import json
 import time
 import secrets
 
-def encrypt_request(aes_key, request_data):
+def encrypt_request_aes_gcm(aes_key, request_data):
     """
-    加密请求数据
+    使用AES-256-GCM加密请求数据
     
     Args:
         aes_key: 32字节AES密钥
@@ -179,10 +229,61 @@ def encrypt_request(aes_key, request_data):
     }
 ```
 
-#### Go实现
+#### Python实现 (ChaCha20-Poly1305)
+
+```python
+from Crypto.Cipher import ChaCha20_Poly1305
+import base64
+import json
+import time
+import secrets
+
+def encrypt_request_chacha20(key, request_data):
+    """
+    使用ChaCha20-Poly1305加密请求数据
+    
+    Args:
+        key: 32字节密钥
+        request_data: 字典格式的请求数据
+    
+    Returns:
+        完整的加密请求体
+    """
+    # 1. 将请求数据转为JSON字符串
+    json_str = json.dumps(request_data)
+    
+    # 2. 创建ChaCha20-Poly1305加密器
+    cipher = ChaCha20_Poly1305.new(key=key)
+    
+    # 3. 加密数据（同时生成认证标签）
+    ciphertext, tag = cipher.encrypt_and_digest(json_str.encode())
+    
+    # 4. 组合: nonce + ciphertext + tag
+    encrypted = cipher.nonce + ciphertext + tag
+    
+    # 5. Base64编码
+    encrypted_b64 = base64.b64encode(encrypted).decode()
+    
+    # 6. 构造完整请求体
+    return {
+        "timestamp": int(time.time()),
+        "nonce": secrets.token_urlsafe(24),
+        "data": encrypted_b64
+    }
+```
+
+#### Go实现 (AES-256-GCM)
 
 ```go
-func encrypt(aesKey []byte, plaintext string) (string, error) {
+import (
+    "crypto/aes"
+    "crypto/cipher"
+    "crypto/rand"
+    "encoding/base64"
+    "io"
+)
+
+func encryptAESGCM(aesKey []byte, plaintext string) (string, error) {
     // 1. 创建AES cipher
     block, err := aes.NewCipher(aesKey)
     if err != nil {
@@ -205,6 +306,37 @@ func encrypt(aesKey []byte, plaintext string) (string, error) {
     ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
     
     // 5. Base64编码
+    return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+```
+
+#### Go实现 (ChaCha20-Poly1305)
+
+```go
+import (
+    "crypto/rand"
+    "encoding/base64"
+    "golang.org/x/crypto/chacha20poly1305"
+    "io"
+)
+
+func encryptChaCha20(key []byte, plaintext string) (string, error) {
+    // 1. 创建ChaCha20-Poly1305 AEAD
+    aead, err := chacha20poly1305.New(key)
+    if err != nil {
+        return "", err
+    }
+    
+    // 2. 生成随机nonce
+    nonce := make([]byte, aead.NonceSize())
+    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+        return "", err
+    }
+    
+    // 3. 加密
+    ciphertext := aead.Seal(nonce, nonce, []byte(plaintext), nil)
+    
+    // 4. Base64编码
     return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 ```
@@ -705,34 +837,71 @@ function encrypt(key, plaintext) {
 
 ## 常见问题FAQ
 
+### 0. 如何选择加密方案
+
+**生产环境推荐**:
+- **AES-256-GCM**: 通用首选，硬件加速支持好（性能：medium）
+- **ChaCha20-Poly1305**: 移动端、嵌入式设备优选（性能：fast）
+
+**开发测试环境**:
+- **Custom-Base64**: 简单混淆，仅用于开发调试
+
+**已废弃方案**（不推荐使用）:
+- **RC4**: 传统流加密，存在安全漏洞
+- **XOR**: 简单异或加密，安全性极低
+
+**选择依据**:
+1. **安全性要求**: 生产环境必须使用 `secure` 级别的方案
+2. **性能需求**: 所有推荐方案性能都很好
+3. **平台支持**: 确认目标平台支持所选加密库
+4. **硬件加速**: x86/ARM平台优先选择AES-256-GCM
+
+**查询项目加密方案**:
+```python
+# 从管理后台API获取项目信息
+response = requests.get(
+    f"{server_url}/admin/projects/{project_uuid}",
+    headers={"Authorization": f"Bearer {admin_token}"}
+)
+project = response.json()["data"]
+print(f"加密方案: {project['encryption_scheme']}")
+print(f"加密密钥: {project['encryption_key']}")
+```
+
 ### 1. 加密失败排查
 
 **问题**: 加密数据后服务端返回解密失败
 
 **排查步骤**:
-1. 检查AES密钥是否正确
+1. 检查加密方案是否匹配
    ```python
-   print(f"密钥长度: {len(aes_key)}")  # 应该是32
+   # 确保客户端使用的加密方案与项目配置一致
+   print(f"项目加密方案: {project_encryption_scheme}")
+   print(f"客户端加密方案: {client_encryption_scheme}")
    ```
 
-2. 检查密钥格式转换
+2. 检查密钥是否正确
    ```python
-   # 正确方式
-   key_bytes = aes_key[:32].encode()
-   
-   # 错误方式
-   # key_bytes = aes_key.encode()  # 长度会是64
+   print(f"密钥长度: {len(encryption_key)}")  # 应该是64（十六进制）
+   key_bytes = encryption_key[:32].encode()  # 取前32字符作为密钥
    ```
 
-3. 检查加密模式是否为GCM
+3. 检查加密模式（AES-GCM）
    ```python
    cipher = AES.new(key, AES.MODE_GCM)  # 必须是GCM模式
    ```
 
-4. 检查数据拼接顺序
+4. 检查数据拼接顺序（AES-GCM）
    ```python
-   # 正确顺序: nonce + tag + ciphertext
-   encrypted = cipher.nonce + tag + ciphertext
+   # 正确顺序: nonce + ciphertext + tag
+   encrypted = cipher.nonce + ciphertext + tag
+   ```
+
+5. 验证加密方案是否被服务端支持
+   ```python
+   schemes = requests.get(f"{server_url}/api/crypto/schemes").json()
+   supported = [s["scheme"] for s in schemes["data"]]
+   print(f"服务端支持的加密方案: {supported}")
    ```
 
 ### 2. 时间戳过期处理
