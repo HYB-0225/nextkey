@@ -6,13 +6,14 @@ NextKey SDK 的模块化 Lua 实现，用于 GameGuardian (GG) 脚本环境。
 
 ```
 gglua/
-├── init.lua           # 主入口文件
-├── utils.lua          # 工具函数模块
-├── base64.lua         # Base64 编解码模块
-├── json.lua           # JSON 编解码模块
-├── rc4.lua            # RC4 加密模块
-├── client.lua         # 卡密登录客户端模块
-└── README.md          # 本文件
+├── init.lua                        # 主入口文件
+├── utils.lua                       # 工具函数模块
+├── base64.lua                      # Base64 编解码模块
+├── json.lua                        # JSON 编解码模块
+├── rc4.lua                         # RC4 加密模块
+├── client.lua                      # 卡密登录客户端模块
+├── Collection-examples.lua         # 包含全部模块，例子的合集
+└── README.md                       # 本文件
 ```
 
 ## 快速开始
