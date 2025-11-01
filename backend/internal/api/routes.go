@@ -19,7 +19,9 @@ func RegisterRoutes(r *gin.Engine) {
 			authenticated.POST("/card/custom-data", middleware.DecryptMiddleware(), UpdateCardCustomData)
 			authenticated.POST("/card/unbind", middleware.DecryptMiddleware(), UnbindCardHWID)
 			authenticated.GET("/cloud-var/:key", middleware.DecryptMiddleware(), GetCloudVar)
+			authenticated.POST("/cloud-var/:key", middleware.DecryptMiddleware(), GetCloudVar)
 			authenticated.GET("/project/info", middleware.DecryptMiddleware(), GetProjectInfo)
+			authenticated.POST("/project/info", middleware.DecryptMiddleware(), GetProjectInfo)
 		}
 	}
 

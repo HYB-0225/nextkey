@@ -229,13 +229,15 @@
 
 ### 3. 获取云变量
 
-**接口**: `GET /api/cloud-var/:key`
+**接口**: `GET /api/cloud-var/:key` 或 `POST /api/cloud-var/:key`
 
 **需要认证**: 是
 
 **需要加密**: 是（请求和响应）
 
-**请求说明**: GET 请求也需要发送加密的请求体（包含 timestamp、nonce、data 字段）
+**请求说明**: 
+- 支持 GET 和 POST 两种方法（为兼容性保留 GET，建议使用 POST）
+- 请求需要发送加密的请求体（包含 timestamp、nonce、data 字段）
 
 **响应格式**:
 ```json
@@ -295,13 +297,15 @@
 
 ### 5. 获取项目信息
 
-**接口**: `GET /api/project/info`
+**接口**: `GET /api/project/info` 或 `POST /api/project/info`
 
 **需要认证**: 是
 
 **需要加密**: 是（请求和响应）
 
-**请求说明**: GET 请求也需要发送加密的请求体（包含 timestamp、nonce、data 字段）
+**请求说明**: 
+- 支持 GET 和 POST 两种方法（为兼容性保留 GET，建议使用 POST）
+- 请求需要发送加密的请求体（包含 timestamp、nonce、data 字段）
 
 **响应格式**:
 ```json
