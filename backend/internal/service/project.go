@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nextkey/nextkey/backend/internal/crypto"
@@ -253,4 +254,16 @@ func (s *ProjectService) UpdateEncryptionScheme(id uint, scheme string) (*models
 	}
 
 	return &project, nil
+}
+
+// GetOnlineCount 获取项目的在线人数
+func (s *ProjectService) GetOnlineCount(projectID uint) (int64, error) {
+	var count int64
+	err := database.DB.Model(&models.Token{}).
+		Where("project_id = ? AND expire_at > ? AND deleted_at IS NULL", projectID, time.Now()).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

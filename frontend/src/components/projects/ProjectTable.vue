@@ -25,6 +25,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="version" label="版本" width="100" />
+      <el-table-column label="在线人数" width="120">
+        <template #default="{ row }">
+          <el-tag type="success" effect="plain">
+            {{ row.online_count || 0 }} 人在线
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="加密密钥" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">
           <CopyableText :text="row.encryption_key" success-message="密钥已复制" :masked="true">

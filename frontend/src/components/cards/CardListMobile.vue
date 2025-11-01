@@ -28,9 +28,14 @@
             <span class="card-key">{{ card.card_key }}</span>
           </CopyableText>
         </div>
-        <el-tag :type="card.activated ? 'success' : 'info'" size="small">
-          {{ card.activated ? '已激活' : '未激活' }}
-        </el-tag>
+        <div class="status-tags">
+          <el-tag v-if="card.is_online" type="success" size="small" effect="dark">
+            在线
+          </el-tag>
+          <el-tag v-else :type="card.activated ? 'success' : 'info'" size="small">
+            {{ card.activated ? '已激活' : '未激活' }}
+          </el-tag>
+        </div>
       </div>
       
       <div class="card-body">

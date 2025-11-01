@@ -63,6 +63,7 @@ type CardListFilter struct {
 	Expired    string
 	HWID       string
 	IP         string
+	Online     string
 	StartTime  string
 	EndTime    string
 	Page       int
@@ -130,6 +131,7 @@ type CardResponse struct {
 	models.Card
 	Status    string `json:"status"`
 	IsExpired bool   `json:"is_expired"`
+	IsOnline  bool   `json:"is_online"`
 }
 
 func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, int64, error) {
@@ -198,11 +200,36 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, in
 		query = query.Where("created_at <= ?", filter.EndTime)
 	}
 
+	// 在线状态筛选
+	if filter.Online == "true" {
+		query = query.Where("id IN (?)",
+			database.DB.Model(&models.Token{}).
+				Select("DISTINCT card_id").
+				Where("card_id IS NOT NULL AND expire_at > ? AND deleted_at IS NULL", time.Now()))
+	} else if filter.Online == "false" {
+		query = query.Where("id NOT IN (?) OR id IS NULL",
+			database.DB.Model(&models.Token{}).
+				Select("DISTINCT card_id").
+				Where("card_id IS NOT NULL AND expire_at > ? AND deleted_at IS NULL", time.Now()))
+	}
+
 	query.Count(&total)
 
 	offset := (filter.Page - 1) * filter.PageSize
 	if err := query.Order("created_at DESC").Offset(offset).Limit(filter.PageSize).Find(&cards).Error; err != nil {
 		return nil, 0, err
+	}
+
+	// 查询在线卡密ID集合
+	var onlineCardIDs []uint
+	database.DB.Model(&models.Token{}).
+		Select("DISTINCT card_id").
+		Where("card_id IS NOT NULL AND expire_at > ? AND deleted_at IS NULL", time.Now()).
+		Pluck("card_id", &onlineCardIDs)
+
+	onlineMap := make(map[uint]bool)
+	for _, id := range onlineCardIDs {
+		onlineMap[id] = true
 	}
 
 	responses := make([]CardResponse, len(cards))
@@ -211,6 +238,7 @@ func (s *CardService) ListWithFilter(filter *CardListFilter) ([]CardResponse, in
 			Card:      card,
 			Status:    card.GetStatus(),
 			IsExpired: card.IsExpired(),
+			IsOnline:  onlineMap[card.ID],
 		}
 	}
 

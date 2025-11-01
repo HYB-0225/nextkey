@@ -46,6 +46,17 @@
           />
         </el-select>
         
+        <el-select 
+          v-model="searchForm.online" 
+          placeholder="在线状态" 
+          clearable
+          class="search-select-sm"
+          @change="handleSearch"
+        >
+          <el-option label="在线" value="true" />
+          <el-option label="离线" value="false" />
+        </el-select>
+        
         <el-input 
           v-model="searchForm.note" 
           placeholder="备注" 
@@ -134,6 +145,7 @@ const searchForm = ref({
   keyword: '',
   card_type: '',
   status: '',
+  online: '',
   note: '',
   custom_data: '',
   hwid: '',
@@ -162,6 +174,7 @@ const handleReset = () => {
     keyword: '',
     card_type: '',
     status: '',
+    online: '',
     note: '',
     custom_data: '',
     hwid: '',

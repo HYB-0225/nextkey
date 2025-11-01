@@ -65,6 +65,7 @@ func ListCards(c *gin.Context) {
 	expired := c.Query("expired")
 	hwid := c.Query("hwid")
 	ip := c.Query("ip")
+	online := c.Query("online")
 	startTime := c.Query("start_time")
 	endTime := c.Query("end_time")
 
@@ -99,6 +100,7 @@ func ListCards(c *gin.Context) {
 		Expired:    expired,
 		HWID:       hwid,
 		IP:         ip,
+		Online:     online,
 		StartTime:  startTime,
 		EndTime:    endTime,
 		Page:       page,

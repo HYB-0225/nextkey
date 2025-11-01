@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nextkey/nextkey/backend/internal/models"
 	"github.com/nextkey/nextkey/backend/internal/service"
 	"github.com/nextkey/nextkey/backend/pkg/utils"
 )
@@ -58,8 +59,23 @@ func ListProjects(c *gin.Context) {
 		return
 	}
 
+	// 为每个项目添加在线人数
+	type ProjectWithOnline struct {
+		*models.Project
+		OnlineCount int64 `json:"online_count"`
+	}
+
+	projectsWithOnline := make([]ProjectWithOnline, len(projects))
+	for i, project := range projects {
+		onlineCount, _ := projectSvc.GetOnlineCount(project.ID)
+		projectsWithOnline[i] = ProjectWithOnline{
+			Project:     &projects[i],
+			OnlineCount: onlineCount,
+		}
+	}
+
 	utils.Success(c, gin.H{
-		"list":  projects,
+		"list":  projectsWithOnline,
 		"total": total,
 		"page":  page,
 	})
