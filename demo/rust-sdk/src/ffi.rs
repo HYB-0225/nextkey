@@ -134,6 +134,7 @@ pub extern "C" fn nextkey_client_new(
 /// * `aes_key` - 加密密钥（格式根据scheme不同而不同），不能为NULL
 /// * `scheme` - 加密方案名称（不区分大小写），支持以下值:
 ///   - `"aes-256-gcm"` - AES-256-GCM（推荐，高安全）
+///   - `"chacha20-poly1305"` - ChaCha20-Poly1305（高安全，移动端友好）
 ///   - `"rc4"` - RC4（中等安全，快速）
 ///   - `"xor"` - XOR（低安全，仅用于测试）
 ///   - `"custom-base64"` - 自定义Base64编码（低安全，仅用于调试）
@@ -224,6 +225,7 @@ pub extern "C" fn nextkey_client_new_with_scheme(
     use crate::crypto::EncryptionScheme;
     let encryption_scheme = match scheme_str.to_lowercase().as_str() {
         "aes-256-gcm" => EncryptionScheme::AES256GCM,
+        "chacha20-poly1305" => EncryptionScheme::ChaCha20Poly1305,
         "rc4" => EncryptionScheme::RC4,
         "xor" => EncryptionScheme::XOR,
         "custom-base64" => EncryptionScheme::CustomBase64,

@@ -183,6 +183,7 @@ struct NextKeyClient *nextkey_client_new(const char *server_url,
  * `aes_key` - 加密密钥（格式根据scheme不同而不同），不能为NULL
  * `scheme` - 加密方案名称（不区分大小写），支持以下值:
    - `"aes-256-gcm"` - AES-256-GCM（推荐，高安全）
+   - `"chacha20-poly1305"` - ChaCha20-Poly1305（高安全，移动端友好）
    - `"rc4"` - RC4（中等安全，快速）
    - `"xor"` - XOR（低安全，仅用于测试）
    - `"custom-base64"` - 自定义Base64编码（低安全，仅用于调试）

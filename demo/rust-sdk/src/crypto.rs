@@ -10,6 +10,7 @@ use rand::RngCore;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EncryptionScheme {
     AES256GCM,
+    ChaCha20Poly1305,
     RC4,
     CustomBase64,
     XOR,
@@ -30,6 +31,7 @@ impl Crypto {
     pub fn new_with_scheme(key: &str, scheme: EncryptionScheme) -> Result<Self> {
         let key_data = match scheme {
             EncryptionScheme::AES256GCM => Self::prepare_aes_key(key)?.to_vec(),
+            EncryptionScheme::ChaCha20Poly1305 => Self::prepare_chacha20_key(key)?.to_vec(),
             EncryptionScheme::RC4 | EncryptionScheme::XOR => {
                 // RC4和XOR使用hex或直接字节
                 hex::decode(key).unwrap_or_else(|_| key.as_bytes().to_vec())
@@ -78,10 +80,45 @@ impl Crypto {
         Ok(key)
     }
 
+    /// 准备ChaCha20密钥，匹配Go后端的decodeKey逻辑
+    fn prepare_chacha20_key(key_str: &str) -> Result<[u8; 32]> {
+        // 尝试hex解码
+        if let Ok(decoded) = hex::decode(key_str) {
+            if decoded.len() == 32 {
+                let mut key = [0u8; 32];
+                key.copy_from_slice(&decoded);
+                return Ok(key);
+            }
+        }
+
+        // 尝试base64解码
+        if let Ok(decoded) = general_purpose::STANDARD.decode(key_str) {
+            if decoded.len() == 32 {
+                let mut key = [0u8; 32];
+                key.copy_from_slice(&decoded);
+                return Ok(key);
+            }
+        }
+
+        // 其他情况直接编码
+        let key_bytes = key_str.as_bytes();
+        if key_bytes.len() != 32 {
+            anyhow::bail!(
+                "ChaCha20密钥长度错误，应为32字节，实际: {}",
+                key_bytes.len()
+            );
+        }
+
+        let mut key = [0u8; 32];
+        key.copy_from_slice(key_bytes);
+        Ok(key)
+    }
+
     /// 加密
     pub fn encrypt(&self, plaintext: &str) -> Result<String> {
         match self.scheme {
             EncryptionScheme::AES256GCM => self.encrypt_aes_gcm(plaintext),
+            EncryptionScheme::ChaCha20Poly1305 => self.encrypt_chacha20(plaintext),
             EncryptionScheme::RC4 => self.encrypt_rc4(plaintext),
             EncryptionScheme::XOR => self.encrypt_xor(plaintext),
             EncryptionScheme::CustomBase64 => self.encrypt_custom_base64(plaintext),
@@ -106,6 +143,30 @@ impl Crypto {
         // 格式: nonce + ciphertext (ciphertext已包含tag)
         let mut encrypted = Vec::with_capacity(12 + ciphertext.len());
         encrypted.extend_from_slice(&nonce_bytes);
+        encrypted.extend_from_slice(&ciphertext);
+
+        Ok(general_purpose::STANDARD.encode(&encrypted))
+    }
+
+    /// ChaCha20-Poly1305加密
+    fn encrypt_chacha20(&self, plaintext: &str) -> Result<String> {
+        use chacha20poly1305::{ChaCha20Poly1305, KeyInit, AeadCore};
+        use chacha20poly1305::aead::Aead;
+        
+        let key: [u8; 32] = self.key_data[..32].try_into()?;
+        let cipher = ChaCha20Poly1305::new(&key.into());
+
+        // 生成12字节nonce
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+
+        // 加密
+        let ciphertext = cipher
+            .encrypt(&nonce, plaintext.as_bytes())
+            .map_err(|_| anyhow::anyhow!("ChaCha20加密失败"))?;
+
+        // 格式: nonce + ciphertext (ciphertext已包含tag)
+        let mut encrypted = Vec::with_capacity(12 + ciphertext.len());
+        encrypted.extend_from_slice(&nonce);
         encrypted.extend_from_slice(&ciphertext);
 
         Ok(general_purpose::STANDARD.encode(&encrypted))
@@ -153,6 +214,7 @@ impl Crypto {
     pub fn decrypt(&self, ciphertext: &str) -> Result<String> {
         match self.scheme {
             EncryptionScheme::AES256GCM => self.decrypt_aes_gcm(ciphertext),
+            EncryptionScheme::ChaCha20Poly1305 => self.decrypt_chacha20(ciphertext),
             EncryptionScheme::RC4 => self.decrypt_rc4(ciphertext),
             EncryptionScheme::XOR => self.decrypt_xor(ciphertext),
             EncryptionScheme::CustomBase64 => self.decrypt_custom_base64(ciphertext),
@@ -181,6 +243,35 @@ impl Crypto {
         let plaintext = cipher
             .decrypt(nonce, ciphertext)
             .map_err(|_| anyhow::anyhow!("解密失败"))?;
+
+        String::from_utf8(plaintext).context("解密后的数据不是有效的UTF-8")
+    }
+
+    /// ChaCha20-Poly1305解密
+    fn decrypt_chacha20(&self, ciphertext: &str) -> Result<String> {
+        use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
+        use chacha20poly1305::aead::Aead;
+        
+        let key: [u8; 32] = self.key_data[..32].try_into()?;
+        let cipher = ChaCha20Poly1305::new(&key.into());
+
+        // Base64解码
+        let data = general_purpose::STANDARD
+            .decode(ciphertext)
+            .context("Base64解码失败")?;
+
+        if data.len() < 12 {
+            anyhow::bail!("密文长度不足");
+        }
+
+        // 提取nonce和密文
+        let nonce = GenericArray::from_slice(&data[..12]);
+        let ciphertext_data = &data[12..];
+
+        // 解密
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext_data)
+            .map_err(|_| anyhow::anyhow!("ChaCha20解密失败"))?;
 
         String::from_utf8(plaintext).context("解密后的数据不是有效的UTF-8")
     }

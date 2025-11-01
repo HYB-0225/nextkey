@@ -82,7 +82,7 @@ public:
      * @param server_url 服务器URL
      * @param project_uuid 项目UUID
      * @param aes_key 加密密钥
-     * @param encryption_scheme 加密方案："aes-256-gcm", "rc4", "xor", "custom-base64"
+     * @param encryption_scheme 加密方案："aes-256-gcm", "chacha20-poly1305", "rc4", "xor", "custom-base64"
      * @throws NextKeyException 创建失败时抛出异常
      */
     NextKeyClient(const std::string& server_url,

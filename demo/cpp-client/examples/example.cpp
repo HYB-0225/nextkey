@@ -36,22 +36,34 @@ int main() {
          *    密钥格式: 32字节密钥（64字符hex字符串）
          *    示例: "78e54210cc4bdf4e6955a5e916f7000631d583e8dccc7ffb93525f53fdcbf061"
          * 
-         * 2. rc4 (已弃用，不安全) - 传统流加密算法
+         * 2. chacha20-poly1305 (推荐) - 现代高性能AEAD加密算法，移动端友好
+         *    密钥格式: 32字节密钥（64字符hex字符串）
+         *    示例: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+         *    优势: 在移动设备和低功耗设备上性能更好
+         * 
+         * 3. rc4 (已弃用，不安全) - 传统流加密算法
          *    密钥格式: hex编码的密钥字符串
          *    示例: "632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037"
          *    警告: RC4已被证明不安全，仅用于兼容性需求
          * 
-         * 3. xor (已弃用，极不安全) - 简单异或加密
+         * 4. xor (已弃用，极不安全) - 简单异或加密
          *    密钥格式: hex编码的密钥字符串或任意字符串
          *    示例: "a1b2c3d4e5f6"
          *    警告: XOR加密极不安全，仅用于测试
          * 
-         * 4. custom-base64 (不安全) - 自定义字符表的Base64编码
+         * 5. custom-base64 (不安全) - 自定义字符表的Base64编码
          *    密钥格式: 64个不重复字符的映射表
          *    示例: "zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA9876543210+/"
          *    警告: 仅用于简单混淆，不提供真正的加密保护
          * 
          * 使用其他加密方案的示例:
+         * 
+         * // ChaCha20-Poly1305 示例（推荐，移动端友好）
+         * auto client_chacha = std::make_unique<nextkey::NextKeyClient>(
+         *     server_url, project_uuid,
+         *     "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+         *     "chacha20-poly1305"
+         * );
          * 
          * // RC4 示例（已弃用）
          * auto client_rc4 = std::make_unique<nextkey::NextKeyClient>(
@@ -74,7 +86,7 @@ int main() {
          *     "custom-base64"
          * );
          * 
-         * 生产环境强烈建议使用 aes-256-gcm！
+         * 生产环境强烈建议使用 aes-256-gcm 或 chacha20-poly1305！
          */
         
         // 2. 登录

@@ -23,6 +23,7 @@ clap = { version = "4.5", features = ["derive"] }
 anyhow = "1.0"
 rc4 = "0.1"
 hex = "0.4"
+chacha20poly1305 = "0.10"
 
 [build-dependencies]
 cbindgen = "0.27"
