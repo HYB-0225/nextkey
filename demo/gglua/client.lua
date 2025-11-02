@@ -116,14 +116,14 @@ function CardLogin:login(card_key, hwid, ip)
         return false, responseData.message or "登录失败"
     end
     
-    -- 验证nonce(只有成功响应才有nonce)
+    -- 验证外层nonce(只有成功响应才有nonce)
     if not responseData.nonce then
         return false, "响应格式错误:缺少nonce字段"
     end
     
     if responseData.nonce ~= nonce then
-        print("Nonce不匹配! 发送: " .. nonce .. ", 接收: " .. tostring(responseData.nonce))
-        return false, "Nonce验证失败,可能存在安全风险"
+        print("外层Nonce不匹配! 发送: " .. nonce .. ", 接收: " .. tostring(responseData.nonce))
+        return false, "外层Nonce验证失败,可能遭受重放攻击"
     end
     
     -- 解密响应数据
@@ -137,7 +137,17 @@ function CardLogin:login(card_key, hwid, ip)
         return false, "响应解密失败"
     end
     
-    -- 解密后的数据结构: { timestamp: xxx, data: { code: 0, message: "success", data: {...} } }
+    -- 验证内层nonce(双重验证)
+    if not decryptedData.nonce then
+        return false, "内层数据缺少nonce字段"
+    end
+    
+    if decryptedData.nonce ~= nonce then
+        print("内层Nonce不匹配! 发送: " .. nonce .. ", 接收: " .. tostring(decryptedData.nonce))
+        return false, "内层Nonce验证失败,响应数据可能被篡改"
+    end
+    
+    -- 解密后的数据结构: { nonce: xxx, timestamp: xxx, data: { code: 0, message: "success", data: {...} } }
     local innerResponse = decryptedData.data
     if not innerResponse then
         return false, "响应内层数据格式错误"
@@ -199,11 +209,18 @@ function CardLogin:heartbeat()
     
     local responseData = json.decode(response.content)
     
+    -- 验证外层nonce
     if not responseData or responseData.nonce ~= nonce then
-        return false, "心跳响应验证失败"
+        return false, "外层Nonce验证失败,可能遭受重放攻击"
     end
     
     local decryptedData = self:decryptData(responseData.data)
+    
+    -- 验证内层nonce
+    if not decryptedData or decryptedData.nonce ~= nonce then
+        return false, "内层Nonce验证失败,响应数据可能被篡改"
+    end
+    
     local innerResponse = decryptedData.data
     
     if not innerResponse or innerResponse.code ~= 0 then
@@ -264,12 +281,19 @@ function CardLogin:getCloudVar(key)
     
     local responseData = json.decode(response.content)
     
+    -- 验证外层nonce
     if not responseData or responseData.nonce ~= nonce then
-        print("Nonce不匹配或响应为空")
-        return false, "响应验证失败"
+        print("外层Nonce不匹配或响应为空")
+        return false, "外层Nonce验证失败,可能遭受重放攻击"
     end
     
     local decryptedData = self:decryptData(responseData.data)
+    
+    -- 验证内层nonce
+    if not decryptedData or decryptedData.nonce ~= nonce then
+        return false, "内层Nonce验证失败,响应数据可能被篡改"
+    end
+    
     local innerResponse = decryptedData.data
     
     if not innerResponse or innerResponse.code ~= 0 then
@@ -321,11 +345,18 @@ function CardLogin:updateCustomData(custom_data)
     
     local responseData = json.decode(response.content)
     
+    -- 验证外层nonce
     if not responseData or responseData.nonce ~= nonce then
-        return false, "响应验证失败"
+        return false, "外层Nonce验证失败,可能遭受重放攻击"
     end
     
     local decryptedData = self:decryptData(responseData.data)
+    
+    -- 验证内层nonce
+    if not decryptedData or decryptedData.nonce ~= nonce then
+        return false, "内层Nonce验证失败,响应数据可能被篡改"
+    end
+    
     local innerResponse = decryptedData.data
     
     if not innerResponse or innerResponse.code ~= 0 then
@@ -379,11 +410,18 @@ function CardLogin:unbindHWID(hwid)
     
     local responseData = json.decode(response.content)
     
+    -- 验证外层nonce
     if not responseData or responseData.nonce ~= nonce then
-        return false, "响应验证失败"
+        return false, "外层Nonce验证失败,可能遭受重放攻击"
     end
     
     local decryptedData = self:decryptData(responseData.data)
+    
+    -- 验证内层nonce
+    if not decryptedData or decryptedData.nonce ~= nonce then
+        return false, "内层Nonce验证失败,响应数据可能被篡改"
+    end
+    
     local innerResponse = decryptedData.data
     
     if not innerResponse or innerResponse.code ~= 0 then

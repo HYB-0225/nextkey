@@ -26,6 +26,7 @@ struct InternalRequest<T> {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct InternalResponse<T> {
+    nonce: String,
     timestamp: u64,
     data: T,
 }
@@ -190,14 +191,19 @@ impl NextKeyClient {
 
         let resp_json: EncryptedResponse = response.json().context("解析响应失败")?;
 
-        // 验证响应nonce
+        // 验证外层响应nonce
         if resp_json.nonce != request_nonce {
-            anyhow::bail!("响应Nonce不匹配，可能遭受重放攻击！");
+            anyhow::bail!("外层响应Nonce不匹配，可能遭受重放攻击！");
         }
 
         // 解密响应数据
         let decrypted = self.crypto.decrypt(&resp_json.data)?;
         let internal_response: InternalResponse<ApiResponse<R>> = serde_json::from_str(&decrypted)?;
+
+        // 验证内层响应nonce（双重验证）
+        if internal_response.nonce != request_nonce {
+            anyhow::bail!("内层响应Nonce不匹配，响应数据可能被篡改！");
+        }
 
         // 验证服务器时间戳
         let current_time = SystemTime::now()

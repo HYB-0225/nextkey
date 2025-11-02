@@ -211,13 +211,17 @@ class NextKeyClient:
         
         resp_json = response.json()
         
-        # 验证响应nonce
+        # 验证外层响应nonce
         if resp_json.get("nonce") != request_nonce:
-            raise ValueError("响应Nonce不匹配，可能遭受重放攻击！")
+            raise ValueError("外层响应Nonce不匹配，可能遭受重放攻击！")
         
         # 解密响应数据
         decrypted = self.decrypt(resp_json["data"])
         internal_response = json.loads(decrypted)
+        
+        # 验证内层响应nonce（双重验证）
+        if internal_response.get("nonce") != request_nonce:
+            raise ValueError("内层响应Nonce不匹配，响应数据可能被篡改！")
         
         # 验证服务器时间戳
         server_timestamp = internal_response.get("timestamp", 0)
@@ -229,8 +233,8 @@ class NextKeyClient:
         # 提取实际业务数据
         result = internal_response.get("data", {})
         
-        # 返回解密后的结果、请求体和原始加密响应
-        return result, req_body, resp_json
+        # 返回解密后的结果、请求体、原始加密响应和完整的内层响应（用于调试）
+        return result, req_body, resp_json, internal_response
     
     def login(self, card_key, hwid="", ip=""):
         """登录"""
@@ -243,34 +247,34 @@ class NextKeyClient:
         if ip:
             login_data["ip"] = ip
         
-        result, request, encrypted_response = self.make_encrypted_request("/api/auth/login", login_data)
+        result, request, encrypted_response, internal_response = self.make_encrypted_request("/api/auth/login", login_data)
         
         if result.get("code") == 0:
             self.token = result["data"]["token"]
             self.session.headers.update({"Authorization": f"Bearer {self.token}"})
         
-        return result, request, encrypted_response
+        return result, request, encrypted_response, internal_response
     
     def heartbeat(self):
         """心跳"""
-        result, _, _ = self.make_encrypted_request("/api/heartbeat", {})
+        result, _, _, _ = self.make_encrypted_request("/api/heartbeat", {})
         return result
     
     def get_cloud_var(self, key):
         """获取云变量"""
-        result, _, _ = self.make_encrypted_request(f"/api/cloud-var/{key}", {}, method="GET")
+        result, _, _, _ = self.make_encrypted_request(f"/api/cloud-var/{key}", {}, method="GET")
         return result
     
     def update_custom_data(self, custom_data):
         """更新专属信息 - 支持任意字符串"""
         # custom_data 可以是任意字符串，不限于 JSON
         data = {"custom_data": custom_data}
-        result, _, _ = self.make_encrypted_request("/api/card/custom-data", data)
+        result, _, _, _ = self.make_encrypted_request("/api/card/custom-data", data)
         return result
     
     def get_project_info(self):
         """获取项目信息"""
-        result, _, _ = self.make_encrypted_request("/api/project/info", {}, method="GET")
+        result, _, _, _ = self.make_encrypted_request("/api/project/info", {}, method="GET")
         return result
     
     def unbind_hwid(self, card_key, hwid):
@@ -280,7 +284,7 @@ class NextKeyClient:
             "card_key": card_key,
             "hwid": hwid
         }
-        result, _, _ = self.make_encrypted_request("/api/card/unbind", data)
+        result, _, _, _ = self.make_encrypted_request("/api/card/unbind", data)
         return result
 
 
@@ -687,7 +691,7 @@ class NextKeyGUI:
         
         try:
             self.log(f"开始登录，卡密: {card_key}", "info")
-            result, request, encrypted_response = self.client.login(
+            result, request, encrypted_response, internal_response = self.client.login(
                 card_key,
                 self.hwid_var.get(),
                 self.ip_var.get()
@@ -707,8 +711,13 @@ class NextKeyGUI:
             self.token_text.insert(tk.END, f"响应Nonce: {encrypted_response.get('nonce', 'N/A')}\n")
             self.token_text.insert(tk.END, f"加密数据: {encrypted_response.get('data', 'N/A')[:50]}...\n\n")
             
-            # 解密后的响应信息
-            self.token_text.insert(tk.END, "=== 解密后的响应 ===\n", "info")
+            # 完整的解密后响应（包含内层nonce和timestamp）
+            self.token_text.insert(tk.END, "=== 解密后的完整响应（含内层验证信息） ===\n", "info")
+            self.token_text.insert(tk.END, json.dumps(internal_response, indent=2, ensure_ascii=False))
+            self.token_text.insert(tk.END, "\n\n")
+            
+            # 业务数据
+            self.token_text.insert(tk.END, "=== 业务数据 ===\n", "info")
             self.token_text.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
             
             if result.get("code") == 0:

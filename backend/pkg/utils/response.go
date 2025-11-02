@@ -20,6 +20,7 @@ type EncryptedResponse struct {
 }
 
 type InternalResponse struct {
+	Nonce     string      `json:"nonce"`
 	Timestamp int64       `json:"timestamp"`
 	Data      interface{} `json:"data"`
 }
@@ -62,8 +63,13 @@ func EncryptedSuccess(c *gin.Context, data interface{}) {
 		Data:    data,
 	}
 
-	// 包装内层数据，嵌入服务器时间戳
+	// 从上下文获取nonce
+	nonce, _ := c.Get("request_nonce")
+	nonceStr, _ := nonce.(string)
+
+	// 包装内层数据，嵌入nonce和服务器时间戳
 	internalResp := InternalResponse{
+		Nonce:     nonceStr,
 		Timestamp: time.Now().Unix(),
 		Data:      resp,
 	}
@@ -92,9 +98,6 @@ func EncryptedSuccess(c *gin.Context, data interface{}) {
 		Error(c, 500, "加密失败")
 		return
 	}
-
-	nonce, _ := c.Get("request_nonce")
-	nonceStr, _ := nonce.(string)
 
 	c.JSON(200, EncryptedResponse{
 		Nonce: nonceStr,
@@ -108,8 +111,13 @@ func EncryptedError(c *gin.Context, code int, message string) {
 		Message: message,
 	}
 
-	// 包装内层数据，嵌入服务器时间戳
+	// 从上下文获取nonce
+	nonce, _ := c.Get("request_nonce")
+	nonceStr, _ := nonce.(string)
+
+	// 包装内层数据，嵌入nonce和服务器时间戳
 	internalResp := InternalResponse{
+		Nonce:     nonceStr,
 		Timestamp: time.Now().Unix(),
 		Data:      resp,
 	}
@@ -138,9 +146,6 @@ func EncryptedError(c *gin.Context, code int, message string) {
 		Error(c, 500, "加密失败")
 		return
 	}
-
-	nonce, _ := c.Get("request_nonce")
-	nonceStr, _ := nonce.(string)
 
 	c.JSON(200, EncryptedResponse{
 		Nonce: nonceStr,
