@@ -80,3 +80,4 @@ CTestTestfile.cmake
 _deps/
 *.cmake
 !CMakeLists.txt
+.contextlens_index/
