@@ -17,6 +17,14 @@ func SetJWTSecret(secret string) {
 	jwtSecret = []byte(secret)
 }
 
+// abortUnauthorized returns a 401 HTTP status so the frontend can trigger refresh flows.
+func abortUnauthorized(c *gin.Context, message string) {
+	c.AbortWithStatusJSON(401, utils.Response{
+		Code:    401,
+		Message: message,
+	})
+}
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -61,15 +69,13 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			utils.Error(c, 401, "未提供认证信息")
-			c.Abort()
+			abortUnauthorized(c, "未提供认证信息")
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			utils.Error(c, 401, "无效的认证格式")
-			c.Abort()
+			abortUnauthorized(c, "无效的认证格式")
 			return
 		}
 
@@ -85,54 +91,47 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil {
-			utils.Error(c, 401, "无效的Token")
-			c.Abort()
+			abortUnauthorized(c, "无效的Token")
 			return
 		}
 
 		if !token.Valid {
-			utils.Error(c, 401, "Token已失效")
-			c.Abort()
+			abortUnauthorized(c, "Token已失效")
 			return
 		}
 
 		// 提取claims
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			utils.Error(c, 401, "无效的Token声明")
-			c.Abort()
+			abortUnauthorized(c, "无效的Token声明")
 			return
 		}
 
 		// 验证必要的claims
 		adminID, ok := claims["admin_id"]
 		if !ok {
-			utils.Error(c, 401, "Token缺少必要信息")
-			c.Abort()
+			abortUnauthorized(c, "Token缺少必要信息")
 			return
 		}
 
 		// 提取JTI
 		jti, ok := claims["jti"]
 		if !ok {
-			utils.Error(c, 401, "Token缺少JTI")
-			c.Abort()
+			abortUnauthorized(c, "Token缺少JTI")
 			return
 		}
 
 		// 检查JTI是否在黑名单中
 		var blacklist models.AdminTokenBlacklist
 		if err := database.DB.Where("jti = ?", jti).First(&blacklist).Error; err == nil {
-			utils.Error(c, 401, "Token已被撤销")
-			c.Abort()
+			abortUnauthorized(c, "Token已被撤销")
 			return
 		}
 
 		// 验证管理员是否仍然存在
 		var admin models.Admin
 		if err := database.DB.First(&admin, uint(adminID.(float64))).Error; err != nil {
-			utils.Error(c, 401, "管理员不存在")
-			c.Abort()
+			abortUnauthorized(c, "管理员不存在")
 			return
 		}
 
