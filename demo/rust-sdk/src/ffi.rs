@@ -2,6 +2,7 @@ use crate::client::NextKeyClient;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::ptr;
+use serde_json;
 
 /// 成功返回码
 /// 
@@ -289,10 +290,22 @@ pub extern "C" fn nextkey_client_free(client: *mut NextKeyClient) {
 #[repr(C)]
 pub struct NextKeyCardInfo {
     pub id: u64,
+    pub project_id: u64,
     pub card_key: *mut c_char,
     pub activated: i32,
+    pub activated_at: *mut c_char,
+    pub frozen: i32,
     pub duration: i64,
+    pub expire_at: *mut c_char,
+    pub note: *mut c_char,
+    pub card_type: *mut c_char,
     pub custom_data: *mut c_char,
+    pub hwid_list: *mut c_char,
+    pub ip_list: *mut c_char,
+    pub max_hwid: i32,
+    pub max_ip: i32,
+    pub created_at: *mut c_char,
+    pub updated_at: *mut c_char,
 }
 
 /// 卡密登录验证
@@ -378,16 +391,45 @@ pub extern "C" fn nextkey_login(
             }
 
             if let Some(data) = response.data {
+                let card = match data.card {
+                    Some(c) => c,
+                    None => {
+                        set_last_error("响应数据中缺少卡密信息 (card 为 null)".to_string());
+                        return NEXTKEY_ERR_UNKNOWN;
+                    }
+                };
+
                 unsafe {
                     *token_out = string_to_c_char(data.token);
                     *expire_at_out = string_to_c_char(data.expire_at);
                     
                     // 填充CardInfo
-                    (*card_info_out).id = data.card.id;
-                    (*card_info_out).card_key = string_to_c_char(data.card.card_key);
-                    (*card_info_out).activated = if data.card.activated { 1 } else { 0 };
-                    (*card_info_out).duration = data.card.duration;
-                    (*card_info_out).custom_data = string_to_c_char(data.card.custom_data);
+                    (*card_info_out).id = card.id;
+                    (*card_info_out).project_id = card.project_id;
+                    (*card_info_out).card_key = string_to_c_char(card.card_key);
+                    (*card_info_out).activated = if card.activated { 1 } else { 0 };
+                    (*card_info_out).activated_at = match card.activated_at {
+                        Some(v) => string_to_c_char(v),
+                        None => ptr::null_mut(),
+                    };
+                    (*card_info_out).frozen = if card.frozen { 1 } else { 0 };
+                    (*card_info_out).duration = card.duration;
+                    (*card_info_out).expire_at = match card.expire_at {
+                        Some(v) => string_to_c_char(v),
+                        None => ptr::null_mut(),
+                    };
+                    (*card_info_out).note = string_to_c_char(card.note);
+                    (*card_info_out).card_type = string_to_c_char(card.card_type);
+                    (*card_info_out).custom_data = string_to_c_char(card.custom_data);
+                    // 将数组序列化为JSON字符串以便C侧读取
+                    let hwid_json = serde_json::to_string(&card.hwid_list).unwrap_or_else(|_| "[]".to_string());
+                    (*card_info_out).hwid_list = string_to_c_char(hwid_json);
+                    let ip_json = serde_json::to_string(&card.ip_list).unwrap_or_else(|_| "[]".to_string());
+                    (*card_info_out).ip_list = string_to_c_char(ip_json);
+                    (*card_info_out).max_hwid = card.max_hwid;
+                    (*card_info_out).max_ip = card.max_ip;
+                    (*card_info_out).created_at = string_to_c_char(card.created_at);
+                    (*card_info_out).updated_at = string_to_c_char(card.updated_at);
                 }
                 NEXTKEY_OK
             } else {
@@ -951,9 +993,41 @@ pub extern "C" fn nextkey_free_card_info(card_info: *mut NextKeyCardInfo) {
                 let _ = CString::from_raw(info.card_key);
                 info.card_key = ptr::null_mut();
             }
+            if !info.activated_at.is_null() {
+                let _ = CString::from_raw(info.activated_at);
+                info.activated_at = ptr::null_mut();
+            }
+            if !info.expire_at.is_null() {
+                let _ = CString::from_raw(info.expire_at);
+                info.expire_at = ptr::null_mut();
+            }
+            if !info.note.is_null() {
+                let _ = CString::from_raw(info.note);
+                info.note = ptr::null_mut();
+            }
+            if !info.card_type.is_null() {
+                let _ = CString::from_raw(info.card_type);
+                info.card_type = ptr::null_mut();
+            }
             if !info.custom_data.is_null() {
                 let _ = CString::from_raw(info.custom_data);
                 info.custom_data = ptr::null_mut();
+            }
+            if !info.hwid_list.is_null() {
+                let _ = CString::from_raw(info.hwid_list);
+                info.hwid_list = ptr::null_mut();
+            }
+            if !info.ip_list.is_null() {
+                let _ = CString::from_raw(info.ip_list);
+                info.ip_list = ptr::null_mut();
+            }
+            if !info.created_at.is_null() {
+                let _ = CString::from_raw(info.created_at);
+                info.created_at = ptr::null_mut();
+            }
+            if !info.updated_at.is_null() {
+                let _ = CString::from_raw(info.updated_at);
+                info.updated_at = ptr::null_mut();
             }
         }
     }

@@ -52,16 +52,42 @@ pub struct LoginRequest {
 pub struct CardInfo {
     pub id: u64,
     pub card_key: String,
+    pub project_id: u64,
+    #[serde(default)]
     pub activated: bool,
+    #[serde(default)]
+    pub activated_at: Option<String>,
+    #[serde(default)]
+    pub frozen: bool,
+    #[serde(default)]
     pub duration: i64,
+    #[serde(default)]
+    pub expire_at: Option<String>,
+    #[serde(default)]
+    pub note: String,
+    #[serde(default)]
+    pub card_type: String,
+    #[serde(default)]
     pub custom_data: String,
+    #[serde(default)]
+    pub hwid_list: Vec<String>,
+    #[serde(default)]
+    pub ip_list: Vec<String>,
+    #[serde(default)]
+    pub max_hwid: i32,
+    #[serde(default)]
+    pub max_ip: i32,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginData {
+    /// 登录 token 的到期时间（与卡密到期无关）
     pub token: String,
     pub expire_at: String,
-    pub card: CardInfo,
+    /// 卡密信息；免费模式下为 None
+    pub card: Option<CardInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

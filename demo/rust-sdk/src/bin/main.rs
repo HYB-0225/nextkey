@@ -150,13 +150,41 @@ fn main() {
                         if let Some(data) = response.data {
                             println!("登录成功!");
                             println!("Token: {}", data.token);
-                            println!("过期时间: {}", data.expire_at);
-                            println!("卡密信息:");
-                            println!("  ID: {}", data.card.id);
-                            println!("  已激活: {}", data.card.activated);
-                            println!("  时长(秒): {}", data.card.duration);
-                            if !data.card.custom_data.is_empty() {
-                                println!("  专属信息: {}", data.card.custom_data);
+                            println!("Token 过期时间: {}", data.expire_at);
+
+                            if let Some(card) = data.card {
+                                println!("卡密信息:");
+                                println!("  ID: {}", card.id);
+                                println!("  ProjectID: {}", card.project_id);
+                                println!("  卡密: {}", card.card_key);
+                                println!("  已激活: {}", card.activated);
+                                if let Some(activated_at) = card.activated_at {
+                                    println!("  激活时间: {}", activated_at);
+                                }
+                                println!("  已冻结: {}", card.frozen);
+                                println!("  时长(秒): {}", card.duration);
+                                if let Some(expire_at) = card.expire_at {
+                                    println!("  卡密到期时间: {}", expire_at);
+                                }
+                                println!("  类型: {}", card.card_type);
+                                if !card.note.is_empty() {
+                                    println!("  备注: {}", card.note);
+                                }
+                                if !card.custom_data.is_empty() {
+                                    println!("  专属信息: {}", card.custom_data);
+                                }
+                                if !card.hwid_list.is_empty() {
+                                    println!("  HWID列表: {:?}", card.hwid_list);
+                                }
+                                if !card.ip_list.is_empty() {
+                                    println!("  IP列表: {:?}", card.ip_list);
+                                }
+                                println!("  MaxHWID: {}", card.max_hwid);
+                                println!("  MaxIP: {}", card.max_ip);
+                                println!("  创建时间: {}", card.created_at);
+                                println!("  更新时间: {}", card.updated_at);
+                            } else {
+                                println!("卡密信息: (free 模式，无卡密)");
                             }
                         }
                     } else {
