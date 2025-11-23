@@ -15,6 +15,7 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <cstdint>
 
 namespace nextkey {
 
@@ -33,13 +34,57 @@ private:
 // 卡密信息
 struct CardInfo {
     uint64_t id;
+    uint64_t project_id;
     std::string card_key;
     bool activated;
+    std::string activated_at;
+    bool frozen;
     int64_t duration;
+    std::string expire_at;
+    std::string note;
+    std::string card_type;
     std::string custom_data;
+    std::string hwid_list_json;
+    std::string ip_list_json;
+    int32_t max_hwid;
+    int32_t max_ip;
+    std::string created_at;
+    std::string updated_at;
     
-    CardInfo(uint64_t i, const std::string& ck, bool act, int64_t dur, const std::string& cd)
-        : id(i), card_key(ck), activated(act), duration(dur), custom_data(cd) {}
+    CardInfo(uint64_t i,
+             uint64_t pid,
+             const std::string& ck,
+             bool act,
+             const std::string& act_at,
+             bool frz,
+             int64_t dur,
+             const std::string& exp_at,
+             const std::string& n,
+             const std::string& ctype,
+             const std::string& cd,
+             const std::string& hwid_json,
+             const std::string& ip_json,
+             int32_t max_h,
+             int32_t max_i,
+             const std::string& created,
+             const std::string& updated)
+        : id(i),
+          project_id(pid),
+          card_key(ck),
+          activated(act),
+          activated_at(act_at),
+          frozen(frz),
+          duration(dur),
+          expire_at(exp_at),
+          note(n),
+          card_type(ctype),
+          custom_data(cd),
+          hwid_list_json(hwid_json),
+          ip_list_json(ip_json),
+          max_hwid(max_h),
+          max_ip(max_i),
+          created_at(created),
+          updated_at(updated) {}
 };
 
 // 登录结果

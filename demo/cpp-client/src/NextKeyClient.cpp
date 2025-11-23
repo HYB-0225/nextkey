@@ -141,10 +141,22 @@ LoginResult NextKeyClient::login(const std::string& card_key,
     
     CardInfo card(
         card_info.id,
+        card_info.project_id,
         card_info.card_key ? std::string(card_info.card_key) : "",
         card_info.activated == 1,
+        card_info.activated_at ? std::string(card_info.activated_at) : "",
+        card_info.frozen == 1,
         card_info.duration,
-        card_info.custom_data ? std::string(card_info.custom_data) : ""
+        card_info.expire_at ? std::string(card_info.expire_at) : "",
+        card_info.note ? std::string(card_info.note) : "",
+        card_info.card_type ? std::string(card_info.card_type) : "",
+        card_info.custom_data ? std::string(card_info.custom_data) : "",
+        card_info.hwid_list ? std::string(card_info.hwid_list) : "",
+        card_info.ip_list ? std::string(card_info.ip_list) : "",
+        card_info.max_hwid,
+        card_info.max_ip,
+        card_info.created_at ? std::string(card_info.created_at) : "",
+        card_info.updated_at ? std::string(card_info.updated_at) : ""
     );
     
     LoginResult login_result(

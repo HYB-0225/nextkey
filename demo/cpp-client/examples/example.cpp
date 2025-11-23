@@ -94,13 +94,39 @@ int main() {
         auto login_result = client->login(card_key, hwid);
         std::cout << "✓ 登录成功\n";
         std::cout << "  令牌: " << login_result.token << "\n";
-        std::cout << "  过期时间: " << login_result.expire_at << "\n";
+        std::cout << "  Token 过期时间: " << login_result.expire_at << "\n";
         std::cout << "  卡密信息:\n";
         std::cout << "    ID: " << login_result.card.id << "\n";
+        std::cout << "    项目ID: " << login_result.card.project_id << "\n";
         std::cout << "    卡密: " << login_result.card.card_key << "\n";
         std::cout << "    已激活: " << (login_result.card.activated ? "是" : "否") << "\n";
+        if (!login_result.card.activated_at.empty()) {
+            std::cout << "    激活时间: " << login_result.card.activated_at << "\n";
+        }
+        std::cout << "    已冻结: " << (login_result.card.frozen ? "是" : "否") << "\n";
         std::cout << "    时长: " << login_result.card.duration << " 秒\n";
-        std::cout << "    专属信息: " << login_result.card.custom_data << "\n\n";
+        if (!login_result.card.expire_at.empty()) {
+            std::cout << "    卡密到期时间: " << login_result.card.expire_at << "\n";
+        }
+        if (!login_result.card.card_type.empty()) {
+            std::cout << "    类型: " << login_result.card.card_type << "\n";
+        }
+        if (!login_result.card.note.empty()) {
+            std::cout << "    备注: " << login_result.card.note << "\n";
+        }
+        if (!login_result.card.custom_data.empty()) {
+            std::cout << "    专属信息: " << login_result.card.custom_data << "\n";
+        }
+        if (!login_result.card.hwid_list_json.empty()) {
+            std::cout << "    HWID 列表(JSON): " << login_result.card.hwid_list_json << "\n";
+        }
+        if (!login_result.card.ip_list_json.empty()) {
+            std::cout << "    IP 列表(JSON): " << login_result.card.ip_list_json << "\n";
+        }
+        std::cout << "    Max HWID: " << login_result.card.max_hwid << "\n";
+        std::cout << "    Max IP: " << login_result.card.max_ip << "\n";
+        std::cout << "    创建时间: " << login_result.card.created_at << "\n";
+        std::cout << "    更新时间: " << login_result.card.updated_at << "\n\n";
         
         // 3. 手动心跳测试
         std::cout << "[步骤 3] 测试手动心跳...\n";
