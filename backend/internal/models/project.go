@@ -9,6 +9,7 @@ import (
 type Project struct {
 	ID               uint           `gorm:"primarykey" json:"id"`
 	UUID             string         `gorm:"uniqueIndex;not null" json:"uuid"`
+	UnbindSlug       string         `json:"unbind_slug"`
 	Name             string         `gorm:"not null" json:"name"`
 	Mode             string         `gorm:"default:free" json:"mode"` // free/paid
 	EnableHWID       bool           `json:"enable_hwid"`

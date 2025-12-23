@@ -3,6 +3,7 @@ package database
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/models"
 	"github.com/nextkey/nextkey/backend/pkg/config"
+	"github.com/nextkey/nextkey/backend/pkg/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -72,6 +74,10 @@ func migrate() error {
 	// 迁移现有项目，为其生成加密密钥
 	if err := migrateProjectEncryption(); err != nil {
 		log.Printf("项目加密字段迁移警告: %v", err)
+	}
+
+	if err := migrateProjectUnbindSlug(); err != nil {
+		log.Printf("项目解绑字段迁移警告: %v", err)
 	}
 
 	return nil
@@ -272,6 +278,49 @@ func migrateProjectEncryption() error {
 		}
 	}
 	return nil
+}
+
+func migrateProjectUnbindSlug() error {
+	if !DB.Migrator().HasTable(&models.Project{}) {
+		return nil
+	}
+
+	if !DB.Migrator().HasColumn(&models.Project{}, "unbind_slug") {
+		if err := DB.Exec("ALTER TABLE projects ADD COLUMN unbind_slug TEXT").Error; err != nil {
+			return err
+		}
+	}
+
+	var projects []models.Project
+	if err := DB.Where("unbind_slug = '' OR unbind_slug IS NULL").Find(&projects).Error; err != nil {
+		return err
+	}
+
+	for i := range projects {
+		slug, err := generateUniqueUnbindSlug()
+		if err != nil {
+			return err
+		}
+		if err := DB.Model(&projects[i]).Update("unbind_slug", slug).Error; err != nil {
+			return err
+		}
+	}
+
+	return DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_unbind_slug ON projects(unbind_slug)").Error
+}
+
+func generateUniqueUnbindSlug() (string, error) {
+	for i := 0; i < 5; i++ {
+		slug := utils.RandomString(24, utils.CharsetTypeAlphanumeric)
+		var count int64
+		if err := DB.Model(&models.Project{}).Where("unbind_slug = ?", slug).Count(&count).Error; err != nil {
+			return "", err
+		}
+		if count == 0 {
+			return slug, nil
+		}
+	}
+	return "", errors.New("生成解绑链接失败")
 }
 
 func cleanExpiredNonces() {

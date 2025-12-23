@@ -8,6 +8,7 @@ import (
 	"github.com/nextkey/nextkey/backend/internal/crypto"
 	"github.com/nextkey/nextkey/backend/internal/database"
 	"github.com/nextkey/nextkey/backend/internal/models"
+	"github.com/nextkey/nextkey/backend/pkg/utils"
 )
 
 type ProjectService struct{}
@@ -32,6 +33,32 @@ type CreateProjectRequest struct {
 	EncryptionScheme string `json:"encryption_scheme"` // 加密方案，默认 aes-256-gcm
 }
 
+func (s *ProjectService) generateUnbindSlug() (string, error) {
+	for i := 0; i < 5; i++ {
+		slug := utils.RandomString(24, utils.CharsetTypeAlphanumeric)
+		var count int64
+		if err := database.DB.Model(&models.Project{}).Where("unbind_slug = ?", slug).Count(&count).Error; err != nil {
+			return "", err
+		}
+		if count == 0 {
+			return slug, nil
+		}
+	}
+	return "", errors.New("生成解绑链接失败")
+}
+
+func (s *ProjectService) ensureUnbindSlug(project *models.Project) error {
+	if project.UnbindSlug != "" {
+		return nil
+	}
+	slug, err := s.generateUnbindSlug()
+	if err != nil {
+		return err
+	}
+	project.UnbindSlug = slug
+	return database.DB.Model(project).Update("unbind_slug", slug).Error
+}
+
 func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, error) {
 	// 设置默认加密方案
 	if req.EncryptionScheme == "" {
@@ -49,8 +76,14 @@ func (s *ProjectService) Create(req *CreateProjectRequest) (*models.Project, err
 		return nil, err
 	}
 
+	unbindSlug, err := s.generateUnbindSlug()
+	if err != nil {
+		return nil, err
+	}
+
 	project := &models.Project{
 		UUID:             uuid.New().String(),
+		UnbindSlug:       unbindSlug,
 		Name:             req.Name,
 		Mode:             req.Mode,
 		EnableHWID:       req.EnableHWID,
@@ -92,6 +125,12 @@ func (s *ProjectService) List(page, pageSize int) ([]models.Project, int64, erro
 		return nil, 0, err
 	}
 
+	for i := range projects {
+		if err := s.ensureUnbindSlug(&projects[i]); err != nil {
+			return nil, 0, err
+		}
+	}
+
 	return projects, total, nil
 }
 
@@ -100,6 +139,9 @@ func (s *ProjectService) GetByUUID(uuid string) (*models.Project, error) {
 	if err := database.DB.Where("uuid = ?", uuid).First(&project).Error; err != nil {
 		return nil, errors.New("项目不存在")
 	}
+	if err := s.ensureUnbindSlug(&project); err != nil {
+		return nil, err
+	}
 	return &project, nil
 }
 
@@ -107,6 +149,9 @@ func (s *ProjectService) GetByID(id uint) (*models.Project, error) {
 	var project models.Project
 	if err := database.DB.First(&project, id).Error; err != nil {
 		return nil, errors.New("项目不存在")
+	}
+	if err := s.ensureUnbindSlug(&project); err != nil {
+		return nil, err
 	}
 	return &project, nil
 }
@@ -174,8 +219,15 @@ func (s *ProjectService) BatchCreate(reqs []CreateProjectRequest) ([]*models.Pro
 			return nil, err
 		}
 
+		unbindSlug, err := s.generateUnbindSlug()
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
 		project := &models.Project{
 			UUID:             uuid.New().String(),
+			UnbindSlug:       unbindSlug,
 			Name:             req.Name,
 			Mode:             req.Mode,
 			EnableHWID:       req.EnableHWID,
@@ -253,6 +305,17 @@ func (s *ProjectService) UpdateEncryptionScheme(id uint, scheme string) (*models
 		return nil, err
 	}
 
+	return &project, nil
+}
+
+func (s *ProjectService) GetByUnbindSlug(slug string) (*models.Project, error) {
+	var project models.Project
+	if err := database.DB.Where("unbind_slug = ?", slug).First(&project).Error; err != nil {
+		return nil, errors.New("项目不存在")
+	}
+	if err := s.ensureUnbindSlug(&project); err != nil {
+		return nil, err
+	}
 	return &project, nil
 }
 

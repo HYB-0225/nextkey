@@ -67,6 +67,10 @@
           <el-icon><Cloudy /></el-icon>
           变量
         </el-button>
+        <el-button size="small" type="warning" @click.stop="$emit('unbind-link', project)">
+          <el-icon><Link /></el-icon>
+          解绑链接
+        </el-button>
         <el-button size="small" type="danger" @click.stop="$emit('delete', project)">
           <el-icon><Delete /></el-icon>
         </el-button>
@@ -98,7 +102,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { Edit, Ticket, Cloudy, Delete, Loading, Box } from '@element-plus/icons-vue'
+import { Edit, Ticket, Cloudy, Link, Delete, Loading, Box } from '@element-plus/icons-vue'
 import CopyableText from '@/components/common/CopyableText.vue'
 import { staggerScaleIn } from '@/utils/animations'
 
@@ -129,7 +133,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'unbind-link', 'delete'])
 
 const selectedIds = computed({
   get: () => props.selectedProjects.map(p => p.id),
@@ -309,6 +313,7 @@ const animateCards = () => {
 .card-footer {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
   padding: 12px 16px;
   background: var(--color-bg-secondary);
   border-top: 1px solid var(--color-border-light);

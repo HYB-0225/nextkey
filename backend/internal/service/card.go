@@ -535,6 +535,75 @@ type UnbindRequest struct {
 	ProjectUUID string `json:"project_uuid"`
 }
 
+func (s *CardService) UnbindAllHWID(cardKey string, projectUUID string) error {
+	var project models.Project
+	if err := database.DB.Where("uuid = ?", projectUUID).First(&project).Error; err != nil {
+		return errors.New("项目不存在")
+	}
+
+	if !project.EnableUnbind {
+		return errors.New("该项目未启用解绑功能")
+	}
+
+	var card models.Card
+	if err := database.DB.Where("card_key = ? AND project_id = ?", cardKey, project.ID).First(&card).Error; err != nil {
+		return errors.New("卡密不存在")
+	}
+
+	if card.IsFrozen() {
+		return errors.New("卡密已冻结")
+	}
+
+	if len(card.HWIDList) == 0 {
+		return errors.New("未绑定设备")
+	}
+
+	var lastUnbind models.UnbindRecord
+	if err := database.DB.Where("card_id = ?", card.ID).Order("unbind_at DESC").First(&lastUnbind).Error; err == nil {
+		cooldownEnd := lastUnbind.UnbindAt.Add(time.Duration(project.UnbindCooldown) * time.Second)
+		if time.Now().Before(cooldownEnd) {
+			remainingTime := int(time.Until(cooldownEnd).Seconds())
+			return errors.New("解绑冷却中，请等待 " + strconv.Itoa(remainingTime) + " 秒后再试")
+		}
+	}
+
+	card.HWIDList = make(models.StringArray, 0)
+
+	if project.UnbindDeductTime > 0 && card.ExpireAt != nil {
+		newExpireAt := card.ExpireAt.Add(-time.Duration(project.UnbindDeductTime) * time.Second)
+		if newExpireAt.Before(time.Now()) {
+			card.ExpireAt = nil
+		} else {
+			card.ExpireAt = &newExpireAt
+		}
+	}
+
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Save(&card).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	unbindRecord := models.UnbindRecord{
+		CardID:       card.ID,
+		HWID:         "ALL",
+		UnbindAt:     time.Now(),
+		DeductedTime: project.UnbindDeductTime,
+	}
+	if err := tx.Create(&unbindRecord).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
 func (s *CardService) UnbindHWID(req *UnbindRequest) error {
 	var project models.Project
 	if err := database.DB.Where("uuid = ?", req.ProjectUUID).First(&project).Error; err != nil {

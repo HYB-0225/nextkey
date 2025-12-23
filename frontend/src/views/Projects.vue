@@ -31,6 +31,7 @@
         @edit="handleEdit"
         @view-cards="handleViewCards"
         @view-vars="handleViewVars"
+        @unbind-link="handleCopyUnbindLink"
         @delete="handleDelete"
       />
     </el-card>
@@ -55,6 +56,7 @@ import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { getProjects, createProject, updateProject, deleteProject, batchCreateProjects, batchDeleteProjects } from '@/api/project'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { copyToClipboard } from '@/utils/copy'
 import { useTableSelection } from '@/composables/useTableSelection'
 import ProjectStatsGrid from '@/components/projects/ProjectStatsGrid.vue'
 import ProjectTable from '@/components/projects/ProjectTable.vue'
@@ -159,6 +161,23 @@ const handleViewCards = (row) => {
 
 const handleViewVars = (row) => {
   router.push(`/cloudvars/${row.id}`)
+}
+
+const buildUnbindLink = (project) => {
+  const baseUrl = window.location.origin
+  if (!project.unbind_slug) {
+    return ''
+  }
+  return `${baseUrl}/unbind/${project.unbind_slug}`
+}
+
+const handleCopyUnbindLink = (row) => {
+  const link = buildUnbindLink(row)
+  if (!link) {
+    ElMessage.warning('解绑链接尚未生成，请刷新后重试')
+    return
+  }
+  copyToClipboard(link, '解绑链接已复制')
 }
 
 const handleBatchCreate = () => {

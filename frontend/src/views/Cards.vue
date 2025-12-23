@@ -34,6 +34,9 @@
         <el-button type="success" @click="handleBatchUnfreeze" :disabled="selectedCards.length === 0">
           批量恢复
         </el-button>
+        <el-button type="warning" @click="handleBatchUnbind" :disabled="selectedCards.length === 0">
+          批量解绑
+        </el-button>
         <el-button type="success" @click="handleBatchExport" :disabled="selectedCards.length === 0">
           批量导出
         </el-button>
@@ -453,6 +456,28 @@ const handleBatchUnfreeze = () => {
         ids: selectedCards.value.map(c => c.id)
       })
       ElMessage.success(`成功恢复 ${selectedCards.value.length} 个卡密`)
+      selectedCards.value = []
+      loadCards()
+    } catch (error) {
+      console.error(error)
+    }
+  }).catch(() => {})
+}
+
+const handleBatchUnbind = () => {
+  ElMessageBox.confirm(`确定要解绑选中的 ${selectedCards.value.length} 个卡密吗?`, '批量解绑', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await batchUpdateCards({
+        ids: selectedCards.value.map(c => c.id),
+        data: {
+          hwid_list: []
+        }
+      })
+      ElMessage.success(`成功解绑 ${selectedCards.value.length} 个卡密`)
       selectedCards.value = []
       loadCards()
     } catch (error) {

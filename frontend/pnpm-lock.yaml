@@ -11,6 +11,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.22)
+      '@stablelib/chacha20poly1305':
+        specifier: ^2.0.1
+        version: 2.0.1
       axios:
         specifier: ^1.6.2
         version: 1.13.0
@@ -324,6 +327,30 @@ packages:
     resolution: {integrity: sha512-TAcgQh2sSkykPRWLrdyy2AiceMckNf5loITqXxFI5VuQjS5tSuw3WlwdN8qv8vzjLAUTvYaH/mVjSFpbkFbpTg==}
     cpu: [x64]
     os: [win32]
+
+  '@stablelib/aead@2.0.0':
+    resolution: {integrity: sha512-U/RMANRxbT/ahIpYsPSiFwDFNjADHdnCFfmo09MO1ai2XmerPAOPtMl0qmX7XVvygnACC6ijKDyHBoT2rGyElg==}
+
+  '@stablelib/binary@2.0.1':
+    resolution: {integrity: sha512-U9iAO8lXgEDONsA0zPPSgcf3HUBNAqHiJmSHgZz62OvC3Hi2Bhc5kTnQ3S1/L+sthDTHtCMhcEiklmIly6uQ3w==}
+
+  '@stablelib/chacha20poly1305@2.0.1':
+    resolution: {integrity: sha512-kOoBsXbDPVRlelzXl+5WViycgM19lD7lF3Bc3KWI+DzId0Stc2HlxAfSc+Xpn3RgqSCl1ZNTXr33LegqBhBBaw==}
+
+  '@stablelib/chacha@2.0.1':
+    resolution: {integrity: sha512-lS1FqtNqofxe2vLkRsLli2m3x/XanUyAYRphLhdHumKeIsLbjbCXdCq3Pf/eWiO7G3QlSG5ViqnoVjktzfLWMg==}
+
+  '@stablelib/constant-time@2.0.1':
+    resolution: {integrity: sha512-0NWPogffRm+UWBH0+iM5otZmNrVe5OHFIvyoNIVankMAYOQzMwcdVALOVPrB5Ho0dST+Oc3H8/hPh65Z8R/uew==}
+
+  '@stablelib/int@2.0.1':
+    resolution: {integrity: sha512-Ht63fQp3wz/F8U4AlXEPb7hfJOIILs8Lq55jgtD7KueWtyjhVuzcsGLSTAWtZs3XJDZYdF1WcSKn+kBtbzupww==}
+
+  '@stablelib/poly1305@2.0.1':
+    resolution: {integrity: sha512-D8xfZcL/5zeVARJ9I2fZOUCnZvsJx8G4JDQvD+ecsnaCildPtqZDwqqjtOc4cfHAdScrMjOzUVsssjXUTBw3YQ==}
+
+  '@stablelib/wipe@2.0.1':
+    resolution: {integrity: sha512-1eU2K9EgOcV4qc9jcP6G72xxZxEm5PfeI5H55l08W95b4oRJaqhmlWRc4xZAm6IVSKhVNxMi66V67hCzzuMTAg==}
 
   '@sxzz/popperjs-es@2.11.7':
     resolution: {integrity: sha512-Ccy0NlLkzr0Ex2FKvh2X+OyERHXJ88XJ1MXtsI9y9fGexlaXaVTPzBCRBwIxFkORuOb+uBqeu+RqnpgYTEZRUQ==}
@@ -790,6 +817,37 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.52.5':
     optional: true
+
+  '@stablelib/aead@2.0.0': {}
+
+  '@stablelib/binary@2.0.1':
+    dependencies:
+      '@stablelib/int': 2.0.1
+
+  '@stablelib/chacha20poly1305@2.0.1':
+    dependencies:
+      '@stablelib/aead': 2.0.0
+      '@stablelib/binary': 2.0.1
+      '@stablelib/chacha': 2.0.1
+      '@stablelib/constant-time': 2.0.1
+      '@stablelib/poly1305': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
+  '@stablelib/chacha@2.0.1':
+    dependencies:
+      '@stablelib/binary': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
+  '@stablelib/constant-time@2.0.1': {}
+
+  '@stablelib/int@2.0.1': {}
+
+  '@stablelib/poly1305@2.0.1':
+    dependencies:
+      '@stablelib/constant-time': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
+  '@stablelib/wipe@2.0.1': {}
 
   '@sxzz/popperjs-es@2.11.7': {}
 

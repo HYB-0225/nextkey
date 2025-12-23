@@ -7,6 +7,11 @@ const routes = [
     component: () => import('@/views/Login.vue')
   },
   {
+    path: '/unbind/:unbindSlug',
+    name: 'ProjectUnbind',
+    component: () => import('@/views/ProjectUnbind.vue')
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     redirect: '/projects',

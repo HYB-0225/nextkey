@@ -10,6 +10,8 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		api.POST("/auth/login", middleware.LoginRateLimitMiddleware(), middleware.DecryptMiddleware(), CardLogin)
 		api.GET("/crypto/schemes", GetEncryptionSchemes)
+		api.POST("/card/unbind", middleware.DecryptMiddleware(), UnbindCardHWID)
+		api.POST("/card/unbind-public", UnbindCardHWIDPublic)
 
 		authenticated := api.Group("")
 		authenticated.Use(middleware.AuthMiddleware())
@@ -17,7 +19,6 @@ func RegisterRoutes(r *gin.Engine) {
 			// 需要加密的请求
 			authenticated.POST("/heartbeat", middleware.DecryptMiddleware(), Heartbeat)
 			authenticated.POST("/card/custom-data", middleware.DecryptMiddleware(), UpdateCardCustomData)
-			authenticated.POST("/card/unbind", middleware.DecryptMiddleware(), UnbindCardHWID)
 			authenticated.GET("/cloud-var/:key", middleware.DecryptMiddleware(), GetCloudVar)
 			authenticated.POST("/cloud-var/:key", middleware.DecryptMiddleware(), GetCloudVar)
 			authenticated.GET("/project/info", middleware.DecryptMiddleware(), GetProjectInfo)

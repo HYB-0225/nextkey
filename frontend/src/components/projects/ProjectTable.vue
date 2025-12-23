@@ -66,6 +66,7 @@
       @edit="(row) => $emit('edit', row)"
       @view-cards="(row) => $emit('view-cards', row)"
       @view-vars="(row) => $emit('view-vars', row)"
+      @unbind-link="(row) => $emit('unbind-link', row)"
       @delete="(row) => $emit('delete', row)"
     />
   </div>
@@ -73,7 +74,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Edit, Ticket, Cloudy, Delete } from '@element-plus/icons-vue'
+import { Edit, Ticket, Cloudy, Link, Delete } from '@element-plus/icons-vue'
 import ActionButtons from '@/components/common/ActionButtons.vue'
 import CopyableText from '@/components/common/CopyableText.vue'
 import ProjectCardList from './ProjectCardList.vue'
@@ -106,7 +107,7 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'delete'])
+const emit = defineEmits(['selection-change', 'page-change', 'edit', 'view-cards', 'view-vars', 'unbind-link', 'delete'])
 
 const handleSelectionChange = (selection) => {
   selectedProjects.value = selection
@@ -131,6 +132,12 @@ const getRowActions = (row) => [
     icon: Cloudy,
     label: '变量',
     handler: () => emit('view-vars', row)
+  },
+  {
+    key: 'unbind-link',
+    icon: Link,
+    label: '解绑链接',
+    handler: () => emit('unbind-link', row)
   },
   {
     key: 'delete',

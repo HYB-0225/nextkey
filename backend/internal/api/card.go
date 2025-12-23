@@ -276,3 +276,34 @@ func UnbindCardHWID(c *gin.Context) {
 
 	utils.EncryptedSuccess(c, gin.H{"message": "解绑成功"})
 }
+
+func UnbindCardHWIDPublic(c *gin.Context) {
+	var req struct {
+		CardKey    string `json:"card_key"`
+		UnbindSlug string `json:"unbind_slug"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, 400, "参数错误")
+		return
+	}
+
+	if req.UnbindSlug == "" {
+		utils.Error(c, 400, "链接无效")
+		return
+	}
+
+	projectSvc := service.NewProjectService()
+	project, err := projectSvc.GetByUnbindSlug(req.UnbindSlug)
+	if err != nil {
+		utils.Error(c, 404, err.Error())
+		return
+	}
+
+	cardSvc := service.NewCardService()
+	if err := cardSvc.UnbindAllHWID(req.CardKey, project.UUID); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "解绑成功"})
+}
