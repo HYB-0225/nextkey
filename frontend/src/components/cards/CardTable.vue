@@ -162,43 +162,72 @@ const getRowActions = (row) => [
 </script>
 
 <style scoped>
+/* === 表格容器去边框 === */
 :deep(.el-table) {
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  --el-table-border-color: transparent;
+  --el-table-header-bg-color: transparent;
+  --el-table-row-hover-bg-color: transparent; /* 我们自己处理 hover */
+  background-color: transparent;
 }
 
-:deep(.el-table th) {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+:deep(.el-table__inner-wrapper::before) {
+  display: none; /* 移除底部横线 */
+}
+
+/* === 表头样式 === */
+:deep(.el-table th.el-table__cell) {
+  background: transparent;
+  border-bottom: none;
+  color: #9ca3af; /* 浅灰色文字 */
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  padding-bottom: 16px;
 }
 
-:deep(.el-table tr:hover) {
-  background: rgba(102, 126, 234, 0.04);
+/* === 每一行变成一个“卡片” === */
+:deep(.el-table__row) {
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  /* 关键：给行加 margin 的 trick */
+  /* Element Table 不支持 tr 的 margin，我们用 border-bottom 透明色模拟间距 */
+  border-bottom: 8px solid var(--color-bg-secondary) !important; 
 }
 
+:deep(.el-table__row:hover) {
+  transform: scale(1.005); /* 微弱放大 */
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  z-index: 1;
+  position: relative;
+}
+
+/* === 单元格样式 === */
+:deep(.el-table td.el-table__cell) {
+  border-bottom: none;
+  padding: 16px 8px;
+}
+
+/* 第一列和最后一列圆角 */
+:deep(.el-table__row td:first-child) {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+:deep(.el-table__row td:last-child) {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* 标签 Tag 样式优化 */
 :deep(.el-tag) {
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  padding: 4px 12px;
-}
-
-:deep(.el-tag.el-tag--success) {
-  background: linear-gradient(135deg, #FFD93D 0%, #FFA400 100%);
+  border-radius: 6px;
   border: none;
-  color: #fff;
-}
-
-:deep(.el-tag.el-tag--info) {
-  background: linear-gradient(135deg, #FF8C42 0%, #FF6B35 100%);
-  border: none;
-  color: #fff;
-}
-
-:deep(.el-tag.el-tag--danger) {
-  background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
-  border: none;
-  color: #fff;
+  font-weight: 600;
+  padding: 0 10px;
+  height: 28px;
+  line-height: 28px;
 }
 
 :deep(.el-pagination) {

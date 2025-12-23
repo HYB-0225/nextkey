@@ -1,0 +1,39 @@
+/* 覆盖 Element Plus 默认变量 */
+:root {
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+  --el-color-primary: #FF8C42; /* 保持你的橙色主色调，或者换成更现代的蓝色 */
+  --el-button-font-weight: 600;
+}
+
+/* === 按钮变身药丸形状 === */
+.el-button {
+  border-radius: 50px !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3); /* 悬浮发光 */
+}
+
+/* === 输入框去硬边框 === */
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px #e5e7eb inset !important;
+  background-color: #f9fafb;
+  padding: 8px 12px;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px var(--el-color-primary) inset !important;
+  background-color: #fff;
+}
+
+/* === 卡片悬浮感 === */
+.el-card {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-md) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px);
+}

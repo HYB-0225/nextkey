@@ -204,16 +204,42 @@ class NextKeyClient:
         }
         
         url = f"{self.server_url}{endpoint}"
+        
+        # --- 增加调试打印 ---
+        print(f"[-] Request URL: {url}")
+        print(f"[-] Client Nonce: {request_nonce}")
+        # ------------------
+
         if method == "POST":
             response = self.session.post(url, json=req_body)
         else:
             response = self.session.get(url, json=req_body)
         
-        resp_json = response.json()
+        try:
+            resp_json = response.json()
+        except Exception as e:
+            # 如果服务器返回的不是json，打印原始内容
+            print(f"[!] Invalid JSON response: {response.text}")
+            raise ValueError(f"服务器返回非JSON数据 (Status: {response.status_code})")
+
+        # --- 关键修改：详细的 Nonce 对比日志 ---
+        server_nonce = resp_json.get("nonce")
         
+        # 打印调试信息到控制台
+        print(f"[-] Server Response: {json.dumps(resp_json, ensure_ascii=False)}")
+        print(f"[-] Nonce Check: Client[{request_nonce}] vs Server[{server_nonce}]")
+
         # 验证外层响应nonce
-        if resp_json.get("nonce") != request_nonce:
-            raise ValueError("外层响应Nonce不匹配，可能遭受重放攻击！")
+        if server_nonce != request_nonce:
+            # 将具体的差异写入报错信息，这样 GUI 弹窗就能看到了
+            error_msg = (
+                f"外层响应Nonce不匹配！\n"
+                f"客户端发送: {request_nonce}\n"
+                f"服务端返回: {server_nonce}\n"
+                f"完整响应: {json.dumps(resp_json, ensure_ascii=False)}"
+            )
+            raise ValueError(error_msg)
+        # -------------------------------------
         
         # 解密响应数据
         decrypted = self.decrypt(resp_json["data"])
@@ -221,7 +247,7 @@ class NextKeyClient:
         
         # 验证内层响应nonce（双重验证）
         if internal_response.get("nonce") != request_nonce:
-            raise ValueError("内层响应Nonce不匹配，响应数据可能被篡改！")
+            raise ValueError(f"内层响应Nonce不匹配！Client: {request_nonce} vs Internal: {internal_response.get('nonce')}")
         
         # 验证服务器时间戳
         server_timestamp = internal_response.get("timestamp", 0)
