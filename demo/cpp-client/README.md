@@ -228,8 +228,10 @@ void stopAutoHeartbeat();
 struct LoginResult {
     std::string token;
     std::string expire_at;
+    CardInfo card;
 };
 ```
+**说明**: free 模式下 `card` 字段为默认空值（ID 为 0，字符串为空）。
 
 #### ProjectInfo
 ```cpp
@@ -237,6 +239,7 @@ struct ProjectInfo {
     std::string uuid;
     std::string name;
     std::string version;
+    std::string update_url;
 };
 ```
 

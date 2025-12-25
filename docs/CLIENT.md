@@ -90,21 +90,32 @@ schemes = response.json()
 
 ### 密钥格式说明
 
-**密钥格式**: 64字符十六进制字符串（HEX编码）
+**密钥格式**: 服务端生成 64 字符字符串（通常为 hex 字符串）
 
-**客户端使用**:
-- **方式1**: 直接使用前32字节（推荐）
-  ```python
-  encryption_key = "632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037"
-  key_bytes = encryption_key[:32].encode()  # 取前32个字符转字节
-  ```
+**客户端使用（需与服务端一致）**:
+- 优先尝试 Base64 解码为 32 字节
+- 若长度为 64，则取前 32 字符的 UTF-8 字节
+- 否则要求密钥本身为 32 字节字符串
 
-- **方式2**: HEX解码为32字节
-  ```python
-  import binascii
-  encryption_key = "632005a33ebb7619c1efd3853c7109f1..."
-  key_bytes = binascii.unhexlify(encryption_key)  # 32字节
-  ```
+```python
+import base64
+
+def prepare_key(key_str: str) -> bytes:
+    try:
+        decoded = base64.b64decode(key_str)
+        if len(decoded) == 32:
+            return decoded
+    except Exception:
+        pass
+
+    if len(key_str) == 64:
+        return key_str[:32].encode("utf-8")
+
+    key_bytes = key_str.encode("utf-8")
+    if len(key_bytes) != 32:
+        raise ValueError("密钥长度应为32字节")
+    return key_bytes
+```
 
 **重要**: 每个项目使用独立的加密密钥，确保使用正确的密钥与对应项目通信。
 
@@ -143,7 +154,7 @@ NextKey 目前支持以下加密方案：
 | **chacha20-poly1305** | secure | fast | 移动端、嵌入式设备 |
 | **rc4** | insecure | fast | 已废弃（不推荐使用） |
 | **xor** | insecure | fast | 已废弃（不推荐使用） |
-| **custom-base64** | insecure | fast | 开发调试（仅用于测试） |
+| **custom-base64** | insecure | fast | 开发调试（不推荐） |
 
 **获取加密方案列表**:
 ```bash
@@ -171,11 +182,25 @@ curl http://localhost:8080/api/crypto/schemes
 
 ### 请求格式
 
+外层请求体：
+
 ```json
 {
   "timestamp": 1698505200,
   "nonce": "随机32字符串",
-  "data": "Base64编码的AES加密数据"
+  "data": "Base64编码的加密数据"
+}
+```
+
+`data` 解密后的内部结构：
+
+```json
+{
+  "nonce": "同外层nonce",
+  "timestamp": 1698505200,
+  "data": {
+    "...": "业务参数"
+  }
 }
 ```
 
@@ -206,25 +231,36 @@ def encrypt_request_aes_gcm(aes_key, request_data):
     Returns:
         完整的加密请求体
     """
-    # 1. 将请求数据转为JSON字符串
-    json_str = json.dumps(request_data)
+    # 1. 生成外层nonce/timestamp
+    request_nonce = secrets.token_urlsafe(24)
+    request_timestamp = int(time.time())
     
-    # 2. 创建AES-GCM加密器
+    # 2. 包装内部结构
+    internal_data = {
+        "nonce": request_nonce,
+        "timestamp": request_timestamp,
+        "data": request_data
+    }
+    
+    # 3. 将内部结构转为JSON字符串
+    json_str = json.dumps(internal_data)
+    
+    # 4. 创建AES-GCM加密器
     cipher = AES.new(aes_key, AES.MODE_GCM)
     
-    # 3. 加密数据（同时生成认证标签）
+    # 5. 加密数据（同时生成认证标签）
     ciphertext, tag = cipher.encrypt_and_digest(json_str.encode())
     
-    # 4. 组合: nonce + ciphertext + tag
+    # 6. 组合: nonce + ciphertext + tag
     encrypted = cipher.nonce + ciphertext + tag
     
-    # 5. Base64编码
+    # 7. Base64编码
     encrypted_b64 = base64.b64encode(encrypted).decode()
     
-    # 6. 构造完整请求体
+    # 8. 构造完整请求体
     return {
-        "timestamp": int(time.time()),
-        "nonce": secrets.token_urlsafe(24),  # 生成随机nonce
+        "timestamp": request_timestamp,
+        "nonce": request_nonce,
         "data": encrypted_b64
     }
 ```
@@ -249,25 +285,36 @@ def encrypt_request_chacha20(key, request_data):
     Returns:
         完整的加密请求体
     """
-    # 1. 将请求数据转为JSON字符串
-    json_str = json.dumps(request_data)
+    # 1. 生成外层nonce/timestamp
+    request_nonce = secrets.token_urlsafe(24)
+    request_timestamp = int(time.time())
     
-    # 2. 创建ChaCha20-Poly1305加密器
+    # 2. 包装内部结构
+    internal_data = {
+        "nonce": request_nonce,
+        "timestamp": request_timestamp,
+        "data": request_data
+    }
+    
+    # 3. 将内部结构转为JSON字符串
+    json_str = json.dumps(internal_data)
+    
+    # 4. 创建ChaCha20-Poly1305加密器
     cipher = ChaCha20_Poly1305.new(key=key)
     
-    # 3. 加密数据（同时生成认证标签）
+    # 5. 加密数据（同时生成认证标签）
     ciphertext, tag = cipher.encrypt_and_digest(json_str.encode())
     
-    # 4. 组合: nonce + ciphertext + tag
+    # 6. 组合: nonce + ciphertext + tag
     encrypted = cipher.nonce + ciphertext + tag
     
-    # 5. Base64编码
+    # 7. Base64编码
     encrypted_b64 = base64.b64encode(encrypted).decode()
     
-    # 6. 构造完整请求体
+    # 8. 构造完整请求体
     return {
-        "timestamp": int(time.time()),
-        "nonce": secrets.token_urlsafe(24),
+        "timestamp": request_timestamp,
+        "nonce": request_nonce,
         "data": encrypted_b64
     }
 ```
@@ -354,6 +401,20 @@ func encryptChaCha20(key []byte, plaintext string) (string, error) {
 }
 ```
 
+解密后的内部响应结构：
+
+```json
+{
+  "nonce": "客户端请求时发送的nonce",
+  "timestamp": 1698505201,
+  "data": {
+    "code": 0,
+    "message": "success",
+    "data": {}
+  }
+}
+```
+
 #### 响应验证流程
 
 1. **记录发送的Nonce**: 客户端发送请求时，保存当前请求的 `nonce` 值
@@ -361,7 +422,8 @@ func encryptChaCha20(key []byte, plaintext string) (string, error) {
 3. **验证Nonce匹配**: 检查响应中的 `nonce` 字段是否与发送的一致
 4. **Base64解码**: 解码响应中的 `data` 字段
 5. **AES-GCM解密**: 使用密钥解密数据
-6. **解析业务数据**: 解析得到标准响应格式（`code`、`message`、`data`）
+6. **解析内部结构**: 校验内部 `nonce` 与 `timestamp`
+7. **解析业务数据**: 解析得到标准响应格式（`code`、`message`、`data`）
 
 #### Python示例
 
@@ -370,13 +432,19 @@ def make_encrypted_request(self, endpoint, data):
     """发送加密请求并验证响应"""
     # 1. 生成并记住nonce
     request_nonce = secrets.token_urlsafe(24)
+    request_timestamp = int(time.time())
     
-    # 2. 加密请求数据
-    json_data = json.dumps(data)
+    # 2. 包装内部结构并加密
+    internal_data = {
+        "nonce": request_nonce,
+        "timestamp": request_timestamp,
+        "data": data
+    }
+    json_data = json.dumps(internal_data)
     encrypted_data = self.encrypt(json_data)
     
     req_body = {
-        "timestamp": int(time.time()),
+        "timestamp": request_timestamp,
         "nonce": request_nonce,  # 记住这个nonce
         "data": encrypted_data
     }
@@ -391,9 +459,17 @@ def make_encrypted_request(self, endpoint, data):
     
     # 5. 解密响应数据
     decrypted = self.decrypt(resp_json["data"])
+    internal_response = json.loads(decrypted)
     
-    # 6. 解析业务数据
-    return json.loads(decrypted)
+    # 6. 校验内部nonce与时间戳
+    if internal_response.get("nonce") != request_nonce:
+        raise ValueError("内部响应Nonce不匹配，可能遭受重放攻击！")
+    server_timestamp = internal_response.get("timestamp", 0)
+    if abs(int(time.time()) - server_timestamp) > 300:
+        raise ValueError("响应时间戳异常，可能遭受离线攻击！")
+    
+    # 7. 解析业务数据
+    return internal_response.get("data")
 ```
 
 #### 安全性说明
@@ -409,9 +485,10 @@ def make_encrypted_request(self, endpoint, data):
 1. **验证时间戳**: 检查 `timestamp` 是否在允许范围内（±5分钟）
 2. **验证Nonce**: 检查 `nonce` 是否在replay_window内已使用过
 3. **Base64解码**: 解码 `data` 字段
-4. **提取组件**: 分离 nonce(12字节) + tag(16字节) + ciphertext
+4. **提取组件**: 分离 nonce(12字节) + ciphertext + tag(16字节)
 5. **AES解密**: 使用GCM模式解密并验证
-6. **解析JSON**: 将解密后的数据解析为请求对象
+6. **解析内部结构**: 校验内部 nonce/timestamp 一致性
+7. **解析JSON**: 提取内部业务请求对象
 
 ### Nonce生成规则
 
@@ -487,6 +564,8 @@ nonce = secrets.token_urlsafe(24)  # 生成32字符的URL安全随机字符串
   │                                    │
 ```
 
+**说明**: free 模式下登录响应中的 `card` 可能为 `null`。
+
 ### Token使用说明
 
 **获取Token**:
@@ -503,7 +582,9 @@ Authorization: Bearer {token}
 - `/api/cloud-var/:key` - 获取云变量
 - `/api/card/custom-data` - 更新专属信息
 - `/api/project/info` - 获取项目信息
-- `/api/card/unbind` - 解绑HWID
+
+**说明**:
+- `/api/card/unbind` 不要求Token，已登录时可携带Token
 
 **示例**:
 ```python
@@ -563,7 +644,7 @@ threading.Thread(target=heartbeat_loop, args=(client,), daemon=True).start()
   │  }                                 │
   │                                    │
   │  2. POST /api/card/unbind          │
-  │  (需要Token认证)                    │
+  │  (无需Token认证)                    │
   │ ──────────────────────────────>    │
   │                                    │
   │                                    │  3. 验证项目是否启用解绑
@@ -605,7 +686,7 @@ except Exception as e:
 ```
 
 **重要提示**:
-- 解绑需要先登录获取Token
+- 解绑不要求Token（有Token也可携带）
 - 默认冷却时间为24小时，请勿频繁解绑
 - 如果项目配置了解绑扣时，会减少卡密剩余时间
 - 解绑后该HWID可以重新绑定
@@ -882,8 +963,8 @@ print(f"加密密钥: {project['encryption_key']}")
 
 2. 检查密钥是否正确
    ```python
-   print(f"密钥长度: {len(encryption_key)}")  # 应该是64（十六进制）
-   key_bytes = encryption_key[:32].encode()  # 取前32字符作为密钥
+   print(f"密钥长度: {len(encryption_key)}")  # 通常为64字符
+   key_bytes = prepare_key(encryption_key)  # 与服务端一致的密钥处理
    ```
 
 3. 检查加密模式（AES-GCM）

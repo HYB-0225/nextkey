@@ -37,7 +37,7 @@
       "name": "AES-256-GCM",
       "description": "AES-256-GCM 加密（推荐）",
       "security_level": "secure",
-      "performance": "fast",
+      "performance": "medium",
       "is_deprecated": false
     },
     {
@@ -49,9 +49,25 @@
       "is_deprecated": false
     },
     {
+      "scheme": "rc4",
+      "name": "RC4",
+      "description": "RC4 加密（兼容性，仅测试）",
+      "security_level": "insecure",
+      "performance": "fast",
+      "is_deprecated": true
+    },
+    {
       "scheme": "xor",
       "name": "XOR",
-      "description": "XOR 加密（仅用于测试）",
+      "description": "XOR 加密（兼容性，仅测试）",
+      "security_level": "insecure",
+      "performance": "fast",
+      "is_deprecated": true
+    },
+    {
+      "scheme": "custom-base64",
+      "name": "自定义Base64",
+      "description": "随机字符表Base64编码，简单混淆",
       "security_level": "insecure",
       "performance": "fast",
       "is_deprecated": false
@@ -75,12 +91,25 @@
 }
 ```
 
+`data` 解密后的内部结构:
+
+```json
+{
+  "nonce": "同外层nonce",
+  "timestamp": 1698505200,
+  "data": {
+    "...": "业务参数"
+  }
+}
+```
+
 ### 加密流程
 
-1. 准备请求数据（JSON格式）
-2. 使用项目配置的加密方案加密数据
-3. Base64编码
-4. 组装完整请求
+1. 准备业务请求数据（JSON格式）
+2. 包装内部结构（嵌入nonce和timestamp）
+3. 使用项目配置的加密方案加密内部结构
+4. Base64编码
+5. 组装完整请求
 
 ### 解密流程
 
@@ -88,7 +117,8 @@
 2. 验证nonce（防重放）
 3. Base64解码
 4. 根据项目配置的加密方案解密数据
-5. 解析JSON数据
+5. 解析内部结构并校验nonce/timestamp一致性
+6. 提取内部业务数据
 
 **注意**: 不同加密方案的具体解密细节由服务端自动处理，客户端只需使用正确的加密方案和密钥即可
 
@@ -103,13 +133,28 @@
 }
 ```
 
+`data` 解密后的内部结构:
+
+```json
+{
+  "nonce": "客户端请求时发送的nonce",
+  "timestamp": 1698505201,
+  "data": {
+    "code": 0,
+    "message": "success",
+    "data": {}
+  }
+}
+```
+
 **响应验证流程**:
 
 1. 客户端发送请求时记录发送的nonce
 2. 收到响应后，验证响应中的`nonce`字段是否与发送的一致
 3. Base64解码`data`字段
 4. 使用项目配置的加密方案解密数据
-5. 解析JSON获取实际的响应数据（包含`code`、`message`、`data`字段）
+5. 解析内部结构并校验nonce/timestamp
+6. 提取内部业务响应数据（`code`、`message`、`data`）
 
 **安全性**: 此机制防止攻击者将旧的有效响应重放给新的请求，即使响应被抓包，也无法用于其他请求。
 
@@ -134,7 +179,7 @@
       "name": "AES-256-GCM",
       "description": "AES-256-GCM 加密（推荐）",
       "security_level": "secure",
-      "performance": "fast",
+      "performance": "medium",
       "is_deprecated": false
     },
     {
@@ -142,6 +187,30 @@
       "name": "ChaCha20-Poly1305",
       "description": "ChaCha20-Poly1305 加密",
       "security_level": "secure",
+      "performance": "fast",
+      "is_deprecated": false
+    },
+    {
+      "scheme": "rc4",
+      "name": "RC4",
+      "description": "RC4 加密（兼容性，仅测试）",
+      "security_level": "insecure",
+      "performance": "fast",
+      "is_deprecated": true
+    },
+    {
+      "scheme": "xor",
+      "name": "XOR",
+      "description": "XOR 加密（兼容性，仅测试）",
+      "security_level": "insecure",
+      "performance": "fast",
+      "is_deprecated": true
+    },
+    {
+      "scheme": "custom-base64",
+      "name": "自定义Base64",
+      "description": "随机字符表Base64编码，简单混淆",
+      "security_level": "insecure",
       "performance": "fast",
       "is_deprecated": false
     }
@@ -198,7 +267,9 @@
 }
 ```
 
-**注意**: 如果卡密已被冻结（`frozen: true`），登录将失败并返回错误信息。
+**注意**:
+- 如果卡密已被冻结（`frozen: true`），登录将失败并返回错误信息。
+- 免费模式下 `card` 字段可能为 `null`。
 
 ### 2. 心跳验证
 
@@ -333,7 +404,7 @@
 
 **接口**: `POST /api/card/unbind`
 
-**需要认证**: 是
+**需要认证**: 否
 
 **需要加密**: 是（请求和响应）
 
@@ -366,6 +437,7 @@
 ```
 
 **注意事项**:
+- 不要求登录Token
 - 需要项目启用解绑功能（`enable_unbind: true`）
 - 如果项目设置了`unbind_verify_hwid: true`，则只能解绑已绑定的HWID
 - 如果关闭验证（`unbind_verify_hwid: false`），仍需传入HWID参数以从列表中移除
@@ -377,7 +449,7 @@
 - `400`: 参数错误或项目未启用解绑功能
 - `400`: 解绑冷却中（错误信息会包含剩余冷却时间）
 - `400`: 该设备未绑定到此卡密（当启用HWID验证时）
-- `401`: 未认证
+- `401`: 加密校验失败或认证失败
 
 ## 管理后台 API
 
@@ -396,11 +468,46 @@
 **响应数据**:
 ```json
 {
-  "token": "JWT Token"
+  "access_token": "JWT Access Token",
+  "refresh_token": "Refresh Token",
+  "expires_in": 900
 }
 ```
 
-### 2. 项目管理
+### 2. 刷新管理员Token
+
+**接口**: `POST /admin/refresh`
+
+**请求参数**:
+```json
+{
+  "refresh_token": "Refresh Token"
+}
+```
+
+**响应数据**:
+```json
+{
+  "access_token": "JWT Access Token",
+  "refresh_token": "Refresh Token",
+  "expires_in": 900
+}
+```
+
+### 3. 管理员注销
+
+**接口**: `POST /admin/logout`
+
+**需要认证**: 是（Header: `Authorization: Bearer {access_token}`）
+
+**响应数据**:
+```json
+{
+  "message": "注销成功"
+}
+```
+
+### 4. 项目管理
 
 #### 获取项目列表
 
@@ -469,14 +576,14 @@
 **请求参数**:
 ```json
 {
-  "projects": [
+  "data": [
     {
       "name": "项目1",
       "mode": "free"
     },
     {
       "name": "项目2",
-      "mode": "card"
+      "mode": "paid"
     }
   ]
 }
@@ -523,7 +630,7 @@
 - 更新后需要通知所有客户端使用新的加密方案和密钥
 - 建议在无活跃用户时进行更新操作
 
-### 3. 卡密管理
+### 5. 卡密管理
 
 #### 获取卡密列表
 
@@ -698,7 +805,7 @@
 }
 ```
 
-### 4. 云变量管理
+### 6. 云变量管理
 
 #### 获取云变量列表
 

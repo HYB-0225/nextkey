@@ -13,7 +13,7 @@ import time
 import secrets
 import threading
 from datetime import datetime
-from Crypto.Cipher import AES, ARC4
+from Crypto.Cipher import AES, ARC4, ChaCha20_Poly1305
 import requests
 import os
 import yaml
@@ -53,6 +53,26 @@ class NextKeyClient:
                 raise ValueError(f"AES密钥长度错误，应为32字节，实际: {len(key_bytes)}")
             return key_bytes
         
+        elif self.encryption_scheme == "chacha20-poly1305":
+            # ChaCha20-Poly1305需要32字节密钥
+            # 尝试base64解码
+            try:
+                key_bytes = base64.b64decode(key_str)
+                if len(key_bytes) == 32:
+                    return key_bytes
+            except:
+                pass
+
+            # 64字符时，取前32字符的UTF-8字节（匹配Go的[]byte(key)[:32]）
+            if len(key_str) == 64:
+                return key_str[:32].encode('utf-8')
+
+            # 其他情况直接编码
+            key_bytes = key_str.encode('utf-8')
+            if len(key_bytes) != 32:
+                raise ValueError(f"ChaCha20密钥长度错误，应为32字节，实际: {len(key_bytes)}")
+            return key_bytes
+        
         elif self.encryption_scheme in ["rc4", "xor"]:
             # RC4和XOR尝试hex解码，否则直接使用字节
             try:
@@ -73,6 +93,8 @@ class NextKeyClient:
         """根据加密方案加密"""
         if self.encryption_scheme == "aes-256-gcm":
             return self._encrypt_aes_gcm(plaintext)
+        elif self.encryption_scheme == "chacha20-poly1305":
+            return self._encrypt_chacha20_poly1305(plaintext)
         elif self.encryption_scheme == "rc4":
             return self._encrypt_rc4(plaintext)
         elif self.encryption_scheme == "xor":
@@ -86,6 +108,8 @@ class NextKeyClient:
         """根据加密方案解密"""
         if self.encryption_scheme == "aes-256-gcm":
             return self._decrypt_aes_gcm(ciphertext)
+        elif self.encryption_scheme == "chacha20-poly1305":
+            return self._decrypt_chacha20_poly1305(ciphertext)
         elif self.encryption_scheme == "rc4":
             return self._decrypt_rc4(ciphertext)
         elif self.encryption_scheme == "xor":
@@ -112,6 +136,23 @@ class NextKeyClient:
         tag = data[-16:]
         ciphertext = data[12:-16]
         cipher = AES.new(self.aes_key, AES.MODE_GCM, nonce=nonce)
+        return cipher.decrypt_and_verify(ciphertext, tag).decode()
+
+    def _encrypt_chacha20_poly1305(self, plaintext):
+        """ChaCha20-Poly1305加密"""
+        nonce = secrets.token_bytes(12)
+        cipher = ChaCha20_Poly1305.new(key=self.aes_key, nonce=nonce)
+        ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
+        encrypted = nonce + ciphertext + tag
+        return base64.b64encode(encrypted).decode()
+
+    def _decrypt_chacha20_poly1305(self, ciphertext):
+        """ChaCha20-Poly1305解密"""
+        data = base64.b64decode(ciphertext)
+        nonce = data[:12]
+        tag = data[-16:]
+        ciphertext = data[12:-16]
+        cipher = ChaCha20_Poly1305.new(key=self.aes_key, nonce=nonce)
         return cipher.decrypt_and_verify(ciphertext, tag).decode()
     
     def _encrypt_rc4(self, plaintext):
@@ -377,6 +418,7 @@ class NextKeyGUI:
         scheme_combo = ttk.Combobox(frame, textvariable=self.encryption_scheme_var, width=47, state="readonly")
         scheme_combo['values'] = (
             'aes-256-gcm (推荐-安全)', 
+            'chacha20-poly1305 (安全-高性能)',
             'rc4 (已弃用-不安全)', 
             'xor (已弃用-不安全)', 
             'custom-base64 (不安全)'
@@ -587,6 +629,7 @@ class NextKeyGUI:
         """更新密钥格式提示"""
         hints = {
             'aes-256-gcm': "32字节密钥 (64字符hex或base64)",
+            'chacha20-poly1305': "32字节密钥 (64字符hex或base64)",
             'rc4': "hex编码的密钥或任意字符串",
             'xor': "hex编码的密钥或任意字符串",
             'custom-base64': "64个不重复字符的映射表"
@@ -651,6 +694,7 @@ class NextKeyGUI:
                 scheme = config.get("encryption_scheme", "aes-256-gcm")
                 scheme_map = {
                     'aes-256-gcm': 'aes-256-gcm (推荐-安全)',
+                    'chacha20-poly1305': 'chacha20-poly1305 (安全-高性能)',
                     'rc4': 'rc4 (已弃用-不安全)',
                     'xor': 'xor (已弃用-不安全)',
                     'custom-base64': 'custom-base64 (不安全)'
@@ -943,9 +987,21 @@ class NextKeyGUI:
     
     def do_unbind(self):
         """执行解绑"""
-        if not self.client or not self.client.token:
-            messagebox.showwarning("警告", "请先登录")
-            return
+        if not self.client:
+            try:
+                scheme_display = self.encryption_scheme_var.get()
+                scheme = scheme_display.split(' ')[0]  # 提取实际方案名
+                
+                self.client = NextKeyClient(
+                    self.server_url_var.get(),
+                    self.project_uuid_var.get(),
+                    self.aes_key_var.get(),
+                    scheme
+                )
+            except Exception as e:
+                messagebox.showerror("错误", f"初始化客户端失败: {e}")
+                self.log(f"初始化客户端失败: {e}", "error")
+                return
         
         card_key = self.unbind_card_key_var.get()
         hwid = self.unbind_hwid_var.get()
@@ -1005,4 +1061,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

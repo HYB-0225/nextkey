@@ -354,6 +354,7 @@ pub struct NextKeyCardInfo {
 /// 
 /// * Token自动保存，后续API调用会自动使用
 /// * 必须先登录才能调用其他需要认证的API
+/// * 免费模式下服务端返回 `card = null`，SDK 会输出空的 `card_info_out`（字段为0/空指针）
 /// * 避免频繁重试，防止触发限流
 /// 
 /// # 线程安全性
@@ -391,45 +392,61 @@ pub extern "C" fn nextkey_login(
             }
 
             if let Some(data) = response.data {
-                let card = match data.card {
-                    Some(c) => c,
-                    None => {
-                        set_last_error("响应数据中缺少卡密信息 (card 为 null)".to_string());
-                        return NEXTKEY_ERR_UNKNOWN;
-                    }
-                };
-
                 unsafe {
                     *token_out = string_to_c_char(data.token);
                     *expire_at_out = string_to_c_char(data.expire_at);
                     
-                    // 填充CardInfo
-                    (*card_info_out).id = card.id;
-                    (*card_info_out).project_id = card.project_id;
-                    (*card_info_out).card_key = string_to_c_char(card.card_key);
-                    (*card_info_out).activated = if card.activated { 1 } else { 0 };
-                    (*card_info_out).activated_at = match card.activated_at {
-                        Some(v) => string_to_c_char(v),
-                        None => ptr::null_mut(),
-                    };
-                    (*card_info_out).frozen = if card.frozen { 1 } else { 0 };
-                    (*card_info_out).duration = card.duration;
-                    (*card_info_out).expire_at = match card.expire_at {
-                        Some(v) => string_to_c_char(v),
-                        None => ptr::null_mut(),
-                    };
-                    (*card_info_out).note = string_to_c_char(card.note);
-                    (*card_info_out).card_type = string_to_c_char(card.card_type);
-                    (*card_info_out).custom_data = string_to_c_char(card.custom_data);
-                    // 将数组序列化为JSON字符串以便C侧读取
-                    let hwid_json = serde_json::to_string(&card.hwid_list).unwrap_or_else(|_| "[]".to_string());
-                    (*card_info_out).hwid_list = string_to_c_char(hwid_json);
-                    let ip_json = serde_json::to_string(&card.ip_list).unwrap_or_else(|_| "[]".to_string());
-                    (*card_info_out).ip_list = string_to_c_char(ip_json);
-                    (*card_info_out).max_hwid = card.max_hwid;
-                    (*card_info_out).max_ip = card.max_ip;
-                    (*card_info_out).created_at = string_to_c_char(card.created_at);
-                    (*card_info_out).updated_at = string_to_c_char(card.updated_at);
+                    match data.card {
+                        Some(card) => {
+                            // 填充CardInfo
+                            (*card_info_out).id = card.id;
+                            (*card_info_out).project_id = card.project_id;
+                            (*card_info_out).card_key = string_to_c_char(card.card_key);
+                            (*card_info_out).activated = if card.activated { 1 } else { 0 };
+                            (*card_info_out).activated_at = match card.activated_at {
+                                Some(v) => string_to_c_char(v),
+                                None => ptr::null_mut(),
+                            };
+                            (*card_info_out).frozen = if card.frozen { 1 } else { 0 };
+                            (*card_info_out).duration = card.duration;
+                            (*card_info_out).expire_at = match card.expire_at {
+                                Some(v) => string_to_c_char(v),
+                                None => ptr::null_mut(),
+                            };
+                            (*card_info_out).note = string_to_c_char(card.note);
+                            (*card_info_out).card_type = string_to_c_char(card.card_type);
+                            (*card_info_out).custom_data = string_to_c_char(card.custom_data);
+                            // 将数组序列化为JSON字符串以便C侧读取
+                            let hwid_json = serde_json::to_string(&card.hwid_list).unwrap_or_else(|_| "[]".to_string());
+                            (*card_info_out).hwid_list = string_to_c_char(hwid_json);
+                            let ip_json = serde_json::to_string(&card.ip_list).unwrap_or_else(|_| "[]".to_string());
+                            (*card_info_out).ip_list = string_to_c_char(ip_json);
+                            (*card_info_out).max_hwid = card.max_hwid;
+                            (*card_info_out).max_ip = card.max_ip;
+                            (*card_info_out).created_at = string_to_c_char(card.created_at);
+                            (*card_info_out).updated_at = string_to_c_char(card.updated_at);
+                        }
+                        None => {
+                            // free 模式下 card 为空，返回空结构体
+                            (*card_info_out).id = 0;
+                            (*card_info_out).project_id = 0;
+                            (*card_info_out).card_key = ptr::null_mut();
+                            (*card_info_out).activated = 0;
+                            (*card_info_out).activated_at = ptr::null_mut();
+                            (*card_info_out).frozen = 0;
+                            (*card_info_out).duration = 0;
+                            (*card_info_out).expire_at = ptr::null_mut();
+                            (*card_info_out).note = ptr::null_mut();
+                            (*card_info_out).card_type = ptr::null_mut();
+                            (*card_info_out).custom_data = ptr::null_mut();
+                            (*card_info_out).hwid_list = ptr::null_mut();
+                            (*card_info_out).ip_list = ptr::null_mut();
+                            (*card_info_out).max_hwid = 0;
+                            (*card_info_out).max_ip = 0;
+                            (*card_info_out).created_at = ptr::null_mut();
+                            (*card_info_out).updated_at = ptr::null_mut();
+                        }
+                    }
                 }
                 NEXTKEY_OK
             } else {
@@ -450,7 +467,7 @@ pub extern "C" fn nextkey_login(
 /// 
 /// # 参数
 /// 
-/// * `client` - 客户端实例指针（必须已登录）
+/// * `client` - 客户端实例指针（可未登录）
 /// 
 /// # 返回值
 /// 
@@ -779,7 +796,7 @@ pub extern "C" fn nextkey_get_project_info(
 /// 
 /// # 注意
 /// 
-/// * 可能需要特定权限
+/// * 不要求登录，若已登录会自动携带Token
 /// * 解绑后下次登录会重新绑定新设备
 /// * 频繁解绑可能触发风控
 /// * 卡密和HWID必须完全匹配

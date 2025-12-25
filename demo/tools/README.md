@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- ✅ **配置管理** - 保存/加载服务器配置，支持从 `config.yaml` 自动读取密钥
+- ✅ **配置管理** - 保存/加载服务器配置（从 `config.yaml` 读取密钥仅兼容旧版本）
 - ✅ **登录测试** - 测试卡密登录，支持HWID和IP参数
 - ✅ **心跳验证** - 手动或自动（30秒间隔）心跳测试
 - ✅ **云变量查询** - 实时查询云端变量值
@@ -62,9 +62,7 @@ gui-test-client.py
 
 1. 输入 **服务器URL**: `http://localhost:8080`
 2. 输入 **项目UUID**: 从管理后台获取
-3. 输入 **AES密钥**: 
-   - 方式1: 点击 "从config.yaml读取" 自动加载
-   - 方式2: 手动输入（64字符十六进制字符串）
+3. 输入 **加密密钥**: 从管理后台项目详情获取（通常为64字符字符串）
 4. 点击 **测试连接** 验证服务器可达性
 5. 点击 **保存配置** 保存到本地文件
 
@@ -149,22 +147,10 @@ gui-test-client.py
 
 **注意**: 此文件包含敏感密钥，请勿提交到版本控制系统。
 
-## 从 config.yaml 读取密钥
+## 从 config.yaml 读取密钥（已弃用）
 
-如果你有服务端的 `config.yaml` 文件：
-
-1. 点击 **从config.yaml读取** 按钮
-2. 选择服务端的 `config.yaml` 文件
-3. 工具会自动提取 `security.aes_key` 并填充
-
-**config.yaml 示例**:
-```yaml
-security:
-  aes_key: 632005a33ebb7619c1efd3853c7109f1c075c7bb86164e35da72916f9d4ef037
-  jwt_secret: ...
-  token_expire: 3600
-  replay_window: 300
-```
+当前版本的密钥为**项目级配置**，不再存放在 `config.yaml` 中。
+旧版本若存在 `security.aes_key` 字段，可继续使用该按钮读取，作为兼容手段。
 
 ## 常见问题
 
@@ -190,9 +176,9 @@ pip install pycryptodome
 **原因**: AES密钥不正确
 
 **解决方案**:
-1. 确认使用的是服务端 `config.yaml` 中的密钥
+1. 确认使用的是管理后台项目详情中的加密密钥
 2. 密钥长度应为 32 或 64 字符
-3. 尝试从 config.yaml 重新读取
+3. 旧版本可尝试从 `config.yaml` 读取（仅兼容旧配置）
 
 ### 4. 登录失败: "timestamp expired"
 
@@ -260,17 +246,31 @@ import base64
 
 cipher = AES.new(key, AES.MODE_GCM)
 ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
-encrypted = cipher.nonce + tag + ciphertext
+encrypted = cipher.nonce + ciphertext + tag
 result = base64.b64encode(encrypted).decode()
 ```
 
 ### 请求格式
+
+外层请求体：
 
 ```json
 {
   "timestamp": 1698505200,
   "nonce": "随机32字符串",
   "data": "Base64编码的加密数据"
+}
+```
+
+`data` 解密后的内部结构：
+
+```json
+{
+  "nonce": "同外层nonce",
+  "timestamp": 1698505200,
+  "data": {
+    "...": "业务参数"
+  }
 }
 ```
 

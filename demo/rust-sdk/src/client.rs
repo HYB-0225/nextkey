@@ -319,10 +319,6 @@ impl NextKeyClient {
 
     /// 解绑HWID
     pub fn unbind_hwid(&self, card_key: &str, hwid: &str) -> Result<ApiResponse<serde_json::Value>> {
-        if self.token.is_none() {
-            anyhow::bail!("未登录，请先调用login");
-        }
-
         let data = serde_json::json!({
             "project_uuid": self.project_uuid,
             "card_key": card_key,

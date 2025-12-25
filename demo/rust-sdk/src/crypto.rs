@@ -82,15 +82,6 @@ impl Crypto {
 
     /// 准备ChaCha20密钥，匹配Go后端的decodeKey逻辑
     fn prepare_chacha20_key(key_str: &str) -> Result<[u8; 32]> {
-        // 尝试hex解码
-        if let Ok(decoded) = hex::decode(key_str) {
-            if decoded.len() == 32 {
-                let mut key = [0u8; 32];
-                key.copy_from_slice(&decoded);
-                return Ok(key);
-            }
-        }
-
         // 尝试base64解码
         if let Ok(decoded) = general_purpose::STANDARD.decode(key_str) {
             if decoded.len() == 32 {
@@ -98,6 +89,13 @@ impl Crypto {
                 key.copy_from_slice(&decoded);
                 return Ok(key);
             }
+        }
+
+        // 64字符时，取前32字符的UTF-8字节（匹配Go的[]byte(key)[:32]）
+        if key_str.len() == 64 {
+            let mut key = [0u8; 32];
+            key.copy_from_slice(&key_str.as_bytes()[..32]);
+            return Ok(key);
         }
 
         // 其他情况直接编码
