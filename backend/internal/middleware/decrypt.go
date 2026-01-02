@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"math"
 	"time"
 
@@ -26,6 +27,14 @@ type InternalRequest struct {
 	Data      json.RawMessage `json:"data"`
 }
 
+var replayWindowSeconds int64 = 300
+
+func SetReplayWindow(seconds int) {
+	if seconds > 0 {
+		replayWindowSeconds = int64(seconds)
+	}
+}
+
 func DecryptMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := io.ReadAll(c.Request.Body)
@@ -42,23 +51,6 @@ func DecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		now := time.Now().Unix()
-		timeDiff := math.Abs(float64(now - encReq.Timestamp))
-		if timeDiff > 300 {
-			utils.Error(c, 401, "请求已过期")
-			c.Abort()
-			return
-		}
-
-		// 使用数据库唯一约束防止重放攻击和竞态条件
-		nonce := models.Nonce{Nonce: encReq.Nonce}
-		if err := database.DB.Create(&nonce).Error; err != nil {
-			// 违反唯一约束表示nonce已存在(重放攻击)
-			utils.Error(c, 401, "检测到重放攻击")
-			c.Abort()
-			return
-		}
-
 		// 获取项目级加密器
 		encryptor, project, err := getEncryptorFromRequest(c, encReq.Data)
 		if err != nil {
@@ -67,9 +59,12 @@ func DecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		c.Set("request_nonce", encReq.Nonce)
+		c.Set("encryptor", encryptor)
+
 		plaintext, err := encryptor.Decrypt(encReq.Data)
 		if err != nil {
-			utils.Error(c, 400, "解密失败")
+			utils.EncryptedError(c, 400, "解密失败")
 			c.Abort()
 			return
 		}
@@ -77,28 +72,48 @@ func DecryptMiddleware() gin.HandlerFunc {
 		// 解密后验证内层nonce和timestamp
 		var internalReq InternalRequest
 		if err := json.Unmarshal([]byte(plaintext), &internalReq); err != nil {
-			utils.Error(c, 400, "内部数据格式错误")
+			utils.EncryptedError(c, 400, "内部数据格式错误")
 			c.Abort()
 			return
 		}
 
 		// 验证内外层nonce一致性
 		if internalReq.Nonce != encReq.Nonce {
-			utils.Error(c, 401, "Nonce验证失败")
+			utils.EncryptedError(c, 401, "Nonce验证失败")
 			c.Abort()
 			return
 		}
 
 		// 验证内外层timestamp一致性
 		if internalReq.Timestamp != encReq.Timestamp {
-			utils.Error(c, 401, "Timestamp验证失败")
+			utils.EncryptedError(c, 401, "Timestamp验证失败")
+			c.Abort()
+			return
+		}
+
+		now := time.Now().Unix()
+		timeDiff := math.Abs(float64(now - encReq.Timestamp))
+		if timeDiff > float64(replayWindowSeconds) {
+			utils.EncryptedError(c, 401, "请求已过期")
+			c.Abort()
+			return
+		}
+
+		// 使用数据库唯一约束防止重放攻击和竞态条件
+		nonce := models.Nonce{Nonce: encReq.Nonce}
+		if err := database.DB.Create(&nonce).Error; err != nil {
+			if database.IsDuplicateError(err) {
+				utils.EncryptedError(c, 401, "检测到重放攻击")
+				c.Abort()
+				return
+			}
+			log.Printf("nonce写入失败 ip=%s err=%v", c.ClientIP(), err)
+			utils.EncryptedError(c, 503, "服务暂时不可用")
 			c.Abort()
 			return
 		}
 
 		c.Set("decrypted_data", string(internalReq.Data))
-		c.Set("request_nonce", encReq.Nonce)
-		c.Set("encryptor", encryptor)
 		c.Set("project_id", project.ID)
 		c.Next()
 	}

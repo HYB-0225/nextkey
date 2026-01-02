@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -19,6 +20,11 @@ type AuthService struct{}
 func NewAuthService() *AuthService {
 	return &AuthService{}
 }
+
+var (
+	ErrInvalidCredentials = errors.New("invalid_credentials")
+	ErrAuthUnavailable    = errors.New("auth_unavailable")
+)
 
 type LoginRequest struct {
 	CardKey     string `json:"card_key"`
@@ -171,12 +177,16 @@ func SetJWTSecret(secret string) {
 func (s *AuthService) AdminLogin(req *AdminLoginRequest) (*AdminLoginResponse, error) {
 	var admin models.Admin
 	if err := database.DB.Where("username = ?", req.Username).First(&admin).Error; err != nil {
-		return nil, errors.New("用户名或密码错误")
+		if database.IsNotFound(err) {
+			return nil, ErrInvalidCredentials
+		}
+		log.Printf("管理员登录查询失败 username=%s err=%v", req.Username, err)
+		return nil, ErrAuthUnavailable
 	}
 
 	// 验证密码 - 支持bcrypt和旧的SHA256格式(向后兼容)
 	if !verifyPassword(admin.Password, req.Password) {
-		return nil, errors.New("用户名或密码错误")
+		return nil, ErrInvalidCredentials
 	}
 
 	// 如果使用旧的SHA256格式,自动升级到bcrypt
@@ -219,7 +229,8 @@ func (s *AuthService) AdminLogin(req *AdminLoginRequest) (*AdminLoginResponse, e
 	}
 
 	if err := database.DB.Create(adminToken).Error; err != nil {
-		return nil, err
+		log.Printf("管理员令牌写入失败 admin_id=%d err=%v", admin.ID, err)
+		return nil, ErrAuthUnavailable
 	}
 
 	return &AdminLoginResponse{

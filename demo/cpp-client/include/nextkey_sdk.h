@@ -266,6 +266,7 @@ void nextkey_client_free(struct NextKeyClient *client);
 
  * Token自动保存，后续API调用会自动使用
  * 必须先登录才能调用其他需要认证的API
+ * 免费模式下服务端返回 `card = null`，SDK 会输出空的 `card_info_out`（字段为0/空指针）
  * 避免频繁重试，防止触发限流
 
  # 线程安全性
@@ -287,7 +288,7 @@ int32_t nextkey_login(struct NextKeyClient *client,
 
  # 参数
 
- * `client` - 客户端实例指针（必须已登录）
+ * `client` - 客户端实例指针（可未登录）
 
  # 返回值
 
@@ -498,7 +499,7 @@ int32_t nextkey_get_project_info(struct NextKeyClient *client,
 
  # 注意
 
- * 可能需要特定权限
+ * 不要求登录，若已登录会自动携带Token
  * 解绑后下次登录会重新绑定新设备
  * 频繁解绑可能触发风控
  * 卡密和HWID必须完全匹配

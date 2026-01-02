@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nextkey/nextkey/backend/internal/middleware"
 	"github.com/nextkey/nextkey/backend/internal/service"
@@ -38,7 +40,15 @@ func AdminLogin(c *gin.Context) {
 	authSvc := service.NewAuthService()
 	resp, err := authSvc.AdminLogin(&req)
 	if err != nil {
-		utils.Error(c, 401, err.Error())
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			utils.Error(c, 401, "用户名或密码错误")
+			return
+		}
+		if errors.Is(err, service.ErrAuthUnavailable) {
+			utils.Error(c, 503, "认证服务暂不可用")
+			return
+		}
+		utils.Error(c, 500, "登录失败")
 		return
 	}
 

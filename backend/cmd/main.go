@@ -27,6 +27,7 @@ func main() {
 	// 设置JWT密钥
 	middleware.SetJWTSecret(cfg.Security.JWTSecret)
 	service.SetJWTSecret(cfg.Security.JWTSecret)
+	middleware.SetReplayWindow(cfg.Security.ReplayWindow)
 
 	if err := database.Initialize(cfg.Database.Path, cfg); err != nil {
 		log.Fatalf("数据库初始化失败: %v", err)

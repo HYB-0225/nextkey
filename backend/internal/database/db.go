@@ -33,6 +33,8 @@ func Initialize(dbPath string, cfg *config.Config) error {
 		return err
 	}
 
+	configureSQLite()
+
 	if err := migrate(); err != nil {
 		return err
 	}
@@ -81,6 +83,26 @@ func migrate() error {
 	}
 
 	return nil
+}
+
+func configureSQLite() {
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Printf("获取数据库连接失败: %v", err)
+		return
+	}
+
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
+
+	if err := DB.Exec("PRAGMA busy_timeout = 5000").Error; err != nil {
+		log.Printf("设置busy_timeout失败: %v", err)
+	}
+
+	var mode string
+	if err := DB.Raw("PRAGMA journal_mode = WAL").Scan(&mode).Error; err != nil {
+		log.Printf("设置WAL模式失败: %v", err)
+	}
 }
 
 func migrateTokenCardID() error {
